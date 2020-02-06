@@ -6,4 +6,24 @@ GRANT ALL PRIVILEGES ON MegaLAN.* TO 'MegaLAN'@'%' IDENTIFIED BY 'MegaLAN';
 FLUSH PRIVILEGES;
 USE MegaLAN;
 
+CREATE TABLE IF NOT EXISTS `Servers` (
+  `ServerName` text COLLATE utf8_bin NOT NULL,
+  `IP` text COLLATE utf8_bin NOT NULL,
+  `Up` tinyint(1) NOT NULL,
+  `HeartBeatTime` bigint(20) NOT NULL,
+  UNIQUE KEY `ServerName` (`ServerName`(100),`IP`(100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE IF NOT EXISTS `ACME` (
+  `Name` VARCHAR(30) COLLATE utf8_bin NOT NULL,
+  `Value` text COLLATE utf8_bin NOT NULL,
+  PRIMARY KEY (`Name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE IF NOT EXISTS `DNS` (
+  `Hostname` text COLLATE utf8_bin NOT NULL,
+  `Type` int(11) NOT NULL,
+  `Value` text COLLATE utf8_bin NOT NULL,
+  `Expire` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 COMMIT;

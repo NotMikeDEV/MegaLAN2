@@ -32,6 +32,7 @@ function PushRemote(server, local, remote) {
 }
 function CleanServer(server) {
     ExecRemote(server, '/MegaLAN/mariadb.lua clean');
+    ExecRemote(server, '/MegaLAN/nodeapp.lua clean');
 }
 
 function DoServer(server) {
@@ -39,6 +40,8 @@ function DoServer(server) {
     ExecRemote(server, 'mkdir -p /MegaLAN/');
 
     PushRemote(server, "mariadb.lua Database.sql", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/mariadb.lua');
+
+    PushRemote(server, "nodeapp.lua NodeApp", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/nodeapp.lua /MegaLAN/NodeApp/*.js && /MegaLAN/nodeapp.lua stop');
 
     PushRemote(server, "launch.sh", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/launch.sh && /MegaLAN/launch.sh &');
 }
