@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-Server",
+      "appliesTo": "Server/",
+      "type": "launch"
+    }
+  ]
+}
