@@ -1,0 +1,12 @@
+<script>
+	$(function () {
+		return location.href = "account/login.html";
+		$.ajax({ url: "/API/Account/" })
+			.done(function (data) {
+				location.href = "account/login.html";
+			})
+			.fail(function (jqXHR, textStatus, errorThrown) { $('.content').text(errorThrown); });
+	});
+</script>
+<div class="content">
+</div>

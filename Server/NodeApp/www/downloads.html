@@ -1,0 +1,62 @@
+<script>
+	$(function () {
+		if (window.navigator.platform == "Win64" || window.navigator.userAgent.indexOf('WOW64') > -1 || window.navigator.userAgent.indexOf('Win64') > -1) {
+			$('#win64').addClass("is-link");
+		} else if (window.navigator.platform == "Win32") {
+			$('#win32').addClass("is-link");
+		} else if (window.navigator.platform.indexOf("Linux") != -1) {
+			$('#linux').addClass("is-link");
+		}
+	});
+</script>
+<div class="content">
+	<p class="title">
+		Download MegaLAN for Windows.
+	</p>
+	<p class="subtitle">
+		Download and if prompted run the installer. Once MegaLAN is installed you will be able to sign in to your account.
+	</p>
+	<div class="buttons is-centered">
+		<a class="button is-large" href="#" id="win64">
+			<span class="fas fa-download"></span>
+			&nbsp;
+			<span>Windows Installer (64bit)</span>
+		</a>
+		<a class="button is-large" href="#" id="win32">
+			<span class="fas fa-download"></span>
+			&nbsp;
+			<span>Windows Installer (32bit)</span>
+		</a>
+	</div>
+	<p class="title">
+		Download MegaLAN for Linux.
+	</p>
+	<p class="subtitle">
+		Due to differences between Linux distributions, the linux client is distributed in source form.
+	</p>
+	<p class="subtitle">
+		Installation is relatively straightforward, as there are minimal dependencies and the build scripts will attempt to automatically install everything.
+	</p>
+	<p class="subtitle">
+		Step-by-step instructions are avaliable in <a href="/docs.html#linux">the documentation</a>.
+	</p>
+	<div class="buttons is-centered">
+		<a class="button is-large" href="#" id="linux">
+			<span class="fas fa-download"></span>
+			&nbsp;
+			<span>Linux Source (all platforms)</span>
+		</a>
+	</div>
+	<p class="title">
+		Entire Project
+	</p>
+	<p class="subtitle">
+		If you wish to deploy your own service based on MegaLAN then the entire project <a href="https://github.com/NotMikeDEV/MegaLAN2/">is avaliable on GitHub</a>, including the server-side components.
+	</p>
+	<p class="subtitle">
+		Please note that the License file included in the project source is relatively restrictive, this is due to the fact that once a license has been issued it can be rather difficult to revoke.
+		The default license does permit cloning the project to see how it works and to set up your own servers, but if you plan to fork the project or integrate the code in to your own product then this is likely to be incompatible.
+		If you do wish to fork the project or create a product based on MegaLAN then please contact me and I will be happy to discuss issuing you with an alternative license.
+		This restricted-by-default license is mostly because I would be interested in knowing what uses people have for the project, and not because I have any issues with people using my code for their own projects.
+	</p>
+</div>
