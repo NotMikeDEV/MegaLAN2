@@ -10,6 +10,7 @@ function install_container()
 	install_package("ca-certificates unbound")
 	exec_or_die("wget -O- https://deb.nodesource.com/setup_13.x | bash -")
 	install_package("nodejs")
+	exec_or_die("npm install promisify-node")
 	exec_or_die("npm install mysql")
 	exec_or_die("npm install ip6addr")
 	exec_or_die("npm install native-dns")
@@ -23,8 +24,8 @@ function apply_config()
 end
 
 function background()
-	exec("cd /MegaLAN/NodeApp && while true; do ./Heartbeat.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
 	exec("cd /MegaLAN/NodeApp && while true; do ./DNSServer.js " .. DomainName .. " " .. IPv4 .. " " .. IPv6 ..  "; sleep 1; done&")
 	exec("cd /MegaLAN/NodeApp && while true; do ./HTTPSServer.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
+	exec("cd /MegaLAN/NodeApp && while true; do ./Heartbeat.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
 	return 0
 end
