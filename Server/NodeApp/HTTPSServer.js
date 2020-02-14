@@ -1,13 +1,13 @@
 #!/usr/bin/nodejs
+const promisify = require("promisify-node");
 const IPAddr = require('ip6addr');
 const https = require('https');
 const http = require('http');
-const util = require('util');
-var database = require('./Include/SQL.js');
 const acme = require('./Include/ACME.js');
-const fs = require('fs');
+const fs = promisify('fs');
 const mime = require('mime-types');
-const zlib = require('zlib');
+const zlib = promisify('zlib');
+const path = require('path');
 
 // Command Line Args
 const args = process.argv.slice(2);
@@ -16,36 +16,33 @@ const DomainName = args[1].toLowerCase();
 const IPv4 = IPAddr.parse(args[2]);
 const IPv6 = IPAddr.parse(args[3]);
 
-const HTM_Template = fs.readFileSync("template.html", {encoding: 'utf8'});
+const HTM_Template = fs.readFileSync("template.html", {encoding: 'utf8'}); // Load Template on startup.
 
 // Function for sending static content
 async function SendFile(Filename, FileStats, Headers, Response) {
     if (Headers['if-modified-since'] == FileStats.mtime || Headers['if-none-match'] == FileStats.mtimeMs) { // 304 Not Modified
-        Response.writeHead(304).end();
+        Response.writeHead(304, { Server: ServerName + "." + DomainName }).end();
     }
 
-    var FileExtension = require('path').extname(Filename);
-    fs.readFile(Filename, (err, FileContent) => {
-        if (err) console.log(err);
-        if (FileExtension == '.html') { // Wrap HTML files in template.
-            FileContent = HTM_Template.replace("$$CONTENT$$", FileContent);
-        }
+    var FileExtension = path.extname(Filename);
+    var FileContent = await fs.readFile(Filename);
+    if (FileExtension == '.html') { // Wrap HTML files in template.
+        FileContent = HTM_Template.replace("$$CONTENT$$", FileContent);
+    }
 
-        if (Headers['accept-encoding'] && Headers['accept-encoding'].indexOf('gzip') != -1) { // Send static file deflate compressed
-            Response.writeHead(200, { 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs, 'Content-Encoding': 'gzip' });
-            zlib.gzip(FileContent, (err, GzippedContent) => {
-                Response.end(GzippedContent);
-            });
-        } else if (Headers['accept-encoding'] && Headers['accept-encoding'].indexOf('deflate') != -1) { // Send static file deflate compressed
-            Response.writeHead(200, { 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs, 'Content-Encoding': 'deflate' });
-            zlib.deflate(FileContent, (err, DeflatedContent) => {
-                Response.end(DeflatedContent);
-            });
-        } else { // Send static file uncompressed
-            Response.writeHead(200, { 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs });
-            Response.end(FileContent);
-        }
-    });
+    if (Headers['accept-encoding'] && Headers['accept-encoding'].indexOf('gzip') != -1) { // Send static file deflate compressed
+        Response.writeHead(200, { Server: ServerName + "." + DomainName, 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs, 'Content-Encoding': 'gzip' });
+        var GzippedContent = await zlib.gzip(FileContent);
+        return Response.end(GzippedContent);
+    }
+    if (Headers['accept-encoding'] && Headers['accept-encoding'].indexOf('deflate') != -1) { // Send static file deflate compressed
+        Response.writeHead(200, { Server: ServerName + "." + DomainName, 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs, 'Content-Encoding': 'deflate' });
+        var DeflatedContent = await zlib.deflate(FileContent);
+        return Response.end(DeflatedContent);
+    }
+    // Send static file uncompressed
+    Response.writeHead(200, { Server: ServerName + "." + DomainName, 'Content-Type': mime.contentType(FileExtension), 'Last-Modified': FileStats.mtime, 'Etag': FileStats.mtimeMs });
+    return Response.end(FileContent);
 }
 
 // Start Service
@@ -55,7 +52,7 @@ async function Init() {
         console.log("HTTP", req.headers['host'], req.url);
         var Host = req.headers['host'];
         if (!Host) Host = DomainName;
-        res.writeHead(301, { Location: "https://" + Host + req.url });
+        res.writeHead(301, { Server: ServerName + "." + DomainName, Location: "https://" + Host + req.url });
         res.end();
     }).on('clientError', (err, socket) => {
         socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
@@ -66,34 +63,67 @@ async function Init() {
     var TLS = await acme(DomainName);
     var Options = { key: TLS.private, cert: TLS.certificate, minVersion: 'TLSv1.1' };
     // HTTPS Server on port 443
-    https.createServer(Options, function (req, res) {
+    https.createServer(Options, async function (req, res) {
+        console.log(req.socket.remoteAddress, "HTTP/" + req.httpVersion, req.method, req.url);
+        if (req.url == "/HeartBeat") { // HeartBeat Test URL
+            res.writeHead(200, { Server: ServerName + "." + DomainName, ServerIP: req.socket.localAddress });
+            return res.end(req.socket.remoteAddress, req.socket.localAddress);
+        }
         var Host = req.headers['host'];
         if (!Host) Host = DomainName;
         if (Host != DomainName && Host != ServerName + "." + DomainName) { // If request was not to ServerName or DomainName, redirect.
-            res.writeHead(302, { Location: "https://" + DomainName + req.url });
+            res.writeHead(302, { Server: ServerName + "." + DomainName, Location: "https://" + DomainName + req.url });
             return res.end(JSON.stringify(Path));
         }
 
         var Path = req.url.split("/");
         if (Path[0] != "" || req.url.indexOf("..") != -1) { // Invalid URL
-            res.writeHead(302, { Location: "https://" + Host + "/" });
+            res.writeHead(302, { Server: ServerName + "." + DomainName, Location: "https://" + Host + "/" });
             return res.end(JSON.stringify(Path));
         }
 
+        if (Path.length > 2 && Path[1] == 'API') { // API Calls, forward to relevant JS file. URL Format: /API/Script/Function{/Param/Param/Param...}
+            var RequestBody = "";
+            req.on('data', (data) => { // Accepts POST/PUT/etc requests with request payload data
+                if (RequestBody.length < 10 * 1024 * 1024 * 1024) { // Request data < 10MB is OK
+                    RequestBody += data;
+                }
+                else { // Request > 10MB, wtf? some kind of attack? Tell them to go away.
+                    RequestBody = "";
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    return res.end("Upload data too large");
+                }
+            });
+            return req.on('end', async function () { // Got API request, send to script.
+                try {
+                    var Command = Path[3]; // Function to call is third parameter in URL
+                    var API = require("./API/" + Path[2] + ".js"); // Load API Script
+                    var Response = await API[Command](Path.slice(4), RequestBody); // Call relevant function, passes optional URL parameters along with raw request body.
+                    res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, ...Response.Headers }); // Send Response
+                    if (Response.Page)
+                        return res.end(HTM_Template.replace("$$CONTENT$$", Response.Page)); // Response.Page is HTML that should be wrapped in template
+                    return res.end(Response.Body); // Response.Body is raw response
+                } catch (e) {
+                    console.error(e);
+                    res.writeHead(500, "API Error", { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html' });
+                    return res.end(HTM_Template.replace("$$CONTENT$$", "<h1 class='title is-1'>500 API Error</h1>" + JSON.stringify(Path)));
+                }
+            });
+        }
+
         var Filename = "www" + req.url;
-        if (Filename == "www/") // Home page is in index.html
+        if (Filename == "www/") // Home page is in default.html
             Filename = "www/default.html";
-        fs.stat(Filename, (err, stats) => { // Get file status
-            if (!err) { // File exists
-                SendFile(Filename, stats, req.headers, res);
-            } else { // 404 File not found
-                res.writeHead(404, { 'Content-Type': 'text/html', Refresh: '3;url=/' });
-                return res.end(HTM_Template.replace("$$CONTENT$$", "<h1 class='title is-1'>404 Not Found</h1>" + JSON.stringify(Path)));
-            }
-        });
+        try {
+            var FileStats = await fs.stat(Filename);
+            SendFile(Filename, FileStats, req.headers, res);
+        } catch (e) { // 404 File not found
+            res.writeHead(404, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', Refresh: '3;url=/' });
+            return res.end(HTM_Template.replace("$$CONTENT$$", "<h1 class='title is-1'>404 Not Found</h1>" + JSON.stringify(Path)));
+        }
     }).on('clientError', (err, socket) => {
         socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-        console.log(err);
+        console.error(socket.remoteAddress, err);
     }).listen(443);
 }
 Init().catch((e) => {
