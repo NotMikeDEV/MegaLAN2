@@ -96,4 +96,7 @@ async function Init() {
         console.log(err);
     }).listen(443);
 }
-Init();
+Init().catch((e) => {
+    console.log(e);
+    process.exit(1);
+});

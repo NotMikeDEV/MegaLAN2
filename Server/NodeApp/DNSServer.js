@@ -48,10 +48,10 @@ var DNSHandler = async function (request, response) {
 				data: Servers[x].ServerName + "." + DomainName,
 				ttl: 300,
 			}));
-			// Send Response as-is.
-			// Don't add the authority/additional sections, it's technically fine to duplicate records but some resolvers give valid-but-unusual looking answers.
-			return response.send();
 		}
+		// Send Response as-is.
+		// Don't add the authority/additional sections, it's technically fine to duplicate records but some resolvers give valid-but-unusual looking answers.
+		return response.send();
 	}
 	if (question.type == 16) { // TXT request
 		var Server = await database.query("SELECT ServerName, IP FROM Servers WHERE ServerName = ? ORDER BY IP", [Host[0]]);
