@@ -1,10 +1,14 @@
 **Project Status: Under development.** Not live yet.
 # [MegaLAN2](https://megalan.app/)
-MegaLAN is a peer to peer VPN client for creating adhoc full mesh VPN networks.
+MegaLAN is a peer to peer VPN client for creating adhoc Virtual LANs.
 
-Users can create private or public VLANs. Clients then connect to these VLANs using a virtual network interface adaptor which provides a virtual ethernet network for communication between hosts.
+Users can create private or public LANs. Users can then join these networks within seconds. Virtual LANs appear as a virtual network interface, which simulates an extra ethernet connection between devices.
 
-Many older games require that users be on a shared LAN for local multiplayer functionality, sometimes using protocols such as IPX. These applications will operate over a MegaLAN VLAN without users needing to set up their own VPN servers or coordinate creating connections to each other using potentially dynamic IP addresses. MegaLAN should also be suitable for any other scenarios where a direct ethernet connection is needed between multiple users over the Internet.
+Do you need to use an application that only works between hosts on the same LAN? File Sharing, Gaming, Media Streaming, etc.
+
+Many older games require that users be on a shared LAN for local multiplayer functionality, sometimes using protocols such as IPX. These applications will operate over MegaLAN without users needing to set up their own servers or coordinate creating connections to each other using potentially dynamic IP addresses.
+
+MegaLAN should be suitable for most scenarios where a direct LAN connection is needed between multiple users over the Internet.
 
 User and VLAN management is handled by a redundant cloud platform, but VLANs are hosted directly by clients using peer to peer communications to send traffic directly between nodes. VLAN traffic does not pass through the server.
 
