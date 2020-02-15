@@ -16,6 +16,7 @@ function install_container()
 	exec_or_die("npm install native-dns")
 	exec_or_die("npm install acme-client")
 	exec_or_die("npm install mime-types")
+	exec_or_die("npm install @sendgrid/mail")
 	return 0
 end
 

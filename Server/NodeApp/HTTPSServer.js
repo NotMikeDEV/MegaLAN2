@@ -12,7 +12,7 @@ const path = require('path');
 // Command Line Args
 const args = process.argv.slice(2);
 const ServerName = args[0].toLowerCase();
-const DomainName = args[1].toLowerCase();
+const DomainName = global.DomainName = args[1].toLowerCase();
 const IPv4 = IPAddr.parse(args[2]);
 const IPv6 = IPAddr.parse(args[3]);
 
@@ -98,11 +98,27 @@ async function Init() {
                 try {
                     var Command = Path[3]; // Function to call is third parameter in URL
                     var API = require("./API/" + Path[2] + ".js"); // Load API Script
-                    var Response = await API[Command](Path.slice(4), RequestBody); // Call relevant function, passes optional URL parameters along with raw request body.
+                    var Session = false;
+                    if (req.headers['authorization']) { // If user gave an auth token, get their session.
+                        Session = await require("./API/auth.js").Session(req.headers['authorization']);
+                    }
+                    var Response = await API[Command](Session, Path.slice(4), RequestBody); // Call relevant function, passes optional URL parameters along with raw request body.
+
+                    if (Response === 403) { // Requested restricted resource without a valid session
+                        res.writeHead(403, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/plain' }); // Send a 403 to the client
+                        return res.end("Authentication Required");
+                    }
+                    if (Response.JSON) { // Response.JSON is an object to be sent as JSON
+                        res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/json', ...Response.Headers });
+                        return res.end(JSON.stringify(Response.JSON));
+                    }
+                    if (Response.Page) { // Response.Page is HTML that should be wrapped in template
+                        res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', ...Response.Headers });
+                        return res.end(HTM_Template.replace("$$CONTENT$$", Response.Page));
+                    }
+                     // ELSE Response.Body is raw response
                     res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, ...Response.Headers }); // Send Response
-                    if (Response.Page)
-                        return res.end(HTM_Template.replace("$$CONTENT$$", Response.Page)); // Response.Page is HTML that should be wrapped in template
-                    return res.end(Response.Body); // Response.Body is raw response
+                    return res.end(Response.Body);
                 } catch (e) {
                     console.error(e);
                     res.writeHead(500, "API Error", { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html' });

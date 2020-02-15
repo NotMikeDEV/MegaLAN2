@@ -11,13 +11,13 @@
 	<script src="/fontawesome.min.js"></script>
 	<script src="/jquery-3.4.1.min.js"></script>
 	<script src="/js.cookie.min.js"></script>
+	<script src="/API.js"></script>
 	<script>
-		$(()=>{
+		$(() => {
 			if (Cookies.get('construction-warning') != "closed")
 				$('#construction-warning').addClass("is-active");
 		});
-		function CloseConstructionWarning()
-		{
+		function CloseConstructionWarning() {
 			Cookies.set('construction-warning', 'closed');
 			$('#construction-warning').removeClass("is-active");
 		}

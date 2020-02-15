@@ -6,7 +6,7 @@ const Directory = acme.directory.letsencrypt.production;
 
 // Retrieve account from DB, create new one if required.
 async function ACMEClient(DomainName) {
-    var Account = await database.query("SELECT Value FROM ACME WHERE Name = 'account'");
+    var Account = await database.query("SELECT Value FROM Settings WHERE Name = 'ACME_account'");
     if (!Account.length) { // New ACME Account
         Account = {
             directoryUrl: Directory,
@@ -18,7 +18,7 @@ async function ACMEClient(DomainName) {
             contact: ['mailto:acme@' + DomainName]
         });
         Account.accountUrl = client.api.accountUrl;
-        await database.query("REPLACE INTO ACME (Name, Value) VALUES ('account', ?);", [JSON.stringify(Account)]);
+        await database.query("REPLACE INTO Settings (Name, Value) VALUES ('ACME_account', ?);", [JSON.stringify(Account)]);
         console.log("Created ACME account", Account);
     } else {
         Account = JSON.parse(Account[0].Value);
@@ -68,9 +68,9 @@ async function Provision(DomainName) {
     const cert = await CA.getCertificate(order);
 
     // Save Certificate
-    await database.query("REPLACE INTO ACME (Name, Value) VALUES ('private', ?);", [key.toString()]);
+    await database.query("REPLACE INTO Settings (Name, Value) VALUES ('TLSprivate', ?);", [key.toString()]);
     console.log("Private Key", key.toString());
-    await database.query("REPLACE INTO ACME (Name, Value) VALUES ('cert', ?);", [cert.toString()]);
+    await database.query("REPLACE INTO Settings (Name, Value) VALUES ('TLScert', ?);", [cert.toString()]);
     console.log("Certificate", cert.toString());
     // Return Certificate
     return { private: key.toString(), certificate: cert.toString() };
@@ -79,8 +79,8 @@ async function Provision(DomainName) {
 // Exported function for getting TLS cert
 module.exports = async function (DomainName) {
     var Keys = {};
-    var PrivateKey = await database.query("SELECT Value FROM ACME WHERE Name = 'private';");
-    var Certificate = await database.query("SELECT Value FROM ACME WHERE Name = 'cert';");
+    var PrivateKey = await database.query("SELECT Value FROM Settings WHERE Name = 'TLSprivate';");
+    var Certificate = await database.query("SELECT Value FROM Settings WHERE Name = 'TLScert';");
     if (PrivateKey.length && Certificate.length)
         Keys = { private: PrivateKey[0].Value, certificate: Certificate[0].Value };
     else

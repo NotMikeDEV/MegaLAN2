@@ -59,6 +59,6 @@ setTimeout(Init, 1000);
 async function GarbageCollect() { // Runs every 30 seconds
 	database.query("UPDATE Servers SET Up = 0 WHERE HeartBeatTime < ?", [Math.floor(new Date()) - 30 * 1000]); // Set servers to Up=0 if no pulse in the last 30 seconds
 	database.query("DELETE FROM Servers WHERE HeartBeatTime < ?", [Math.floor(new Date()) - 48*3600*1000]); // Delete servers that have been brain-dead for more than 48 hours
-	database.query("DELETE FROM DNS WHERE Expire < ?", [Math.floor(new Date() / 1000)]); // Delete expired DNS records
+	database.query("DELETE FROM DNS WHERE Expire < ? AND Expire > 0", [Math.floor(new Date() / 1000)]); // Delete expired DNS records
 }
 setInterval(GarbageCollect, 30000);

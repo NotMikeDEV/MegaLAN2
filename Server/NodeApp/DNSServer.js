@@ -53,6 +53,21 @@ var DNSHandler = async function (request, response) {
 		// Don't add the authority/additional sections, it's technically fine to duplicate records but some resolvers give valid-but-unusual looking answers.
 		return response.send();
 	}
+
+	var CNAME = await database.query("SELECT Value FROM DNS WHERE Type = 0 AND Hostname = ?", [hostname]); // Check for exact match CNAME records in database
+	if (CNAME.length) {
+		for (x in CNAME) {
+			response.answer.push(dns.CNAME({
+				name: hostname,
+				data: CNAME[x].Value,
+				ttl: 30,
+			}));
+		}
+		// Send Response as-is.
+		// Don't add the authority/additional sections.
+		return response.send();
+	}
+
 	if (question.type == 16) { // TXT request
 		var Server = await database.query("SELECT ServerName, IP FROM Servers WHERE ServerName = ? ORDER BY IP", [Host[0]]);
 		if (Server.length > 0) // Matches server, generate SPF record with server IPs listed
