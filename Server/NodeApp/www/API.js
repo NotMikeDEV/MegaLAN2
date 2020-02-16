@@ -1,5 +1,15 @@
 var MySessionID = Cookies.get("SID");
-
+function SetLogoutButton() {
+	if (MySessionID)
+		$('.logout').removeClass('is-hidden')
+			.click(() => {
+				Cookies.remove("SID");
+				location.href = '/';
+			});
+	else
+		$('.logout').addClass('is-hidden');
+}
+$(SetLogoutButton);
 function API(URL, Data, Callback) {
 	$.ajax({
 		url: "/API/" + URL,
@@ -13,6 +23,7 @@ function API(URL, Data, Callback) {
 		},
 		error: function (jqXhr) {
 			if (jqXhr.status == 403) {
+				Cookies.remove("SID");
 				ShowLogin(URL, Data, Callback);
 			}
 			else
@@ -96,6 +107,7 @@ function ShowLogin(URL, Data, Callback) {
 								MySessionID = data.SessionID;
 								Cookies.set("SID", MySessionID);
 								Dialog.remove();
+								SetLogoutButton();
 								API(URL, Data, Callback);
 							}
 						},

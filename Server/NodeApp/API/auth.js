@@ -24,10 +24,18 @@ module.exports = {
 		}
 	},
 	Session: async function (Token) {
-		var User = await database.query("SELECT Accounts.UserID, Username, FullName FROM Accounts JOIN Sessions WHERE SID = ?", [Token]);
-		if (User.length)
-			return User[0];
-		else
+		var Now = new Date() / 1000;
+		var User = await database.query("SELECT Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
+		if (!User.length)
 			return false;
+		database.query("UPDATE Sessions SET Expire = ? WHERE SID = ?", [Now + 600, Token]);
+		return User[0];
 	},
 };
+
+async function GarbageCollect() {
+	var Now = new Date() / 1000;
+	await database.query("DELETE FROM Sessions WHERE Expire < ?", [Now]);
+	setTimeout(GarbageCollect, (300 * 1000) + Math.floor(Math.random() * 60000));
+}
+GarbageCollect();
