@@ -20,10 +20,6 @@ function install_container()
 	return 0
 end
 
-function apply_config()
-	return 0
-end
-
 function background()
 	exec("cd /MegaLAN/NodeApp && while true; do ./DNSServer.js " .. DomainName .. " " .. IPv4 .. " " .. IPv6 ..  "; sleep 1; done&")
 	exec("cd /MegaLAN/NodeApp && while true; do ./HTTPSServer.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
