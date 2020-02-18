@@ -1,10 +1,44 @@
 <script>
 	function Load() {
 		API("account/profile", false, (Data) => {
-			alert(Data);
+			$('#FullName').text(Data.FullName);
+			$('#UserID').text(Data.UserID);
+			$('#Username').text(Data.Username);
+			$('#Email').text(Data.Email);
+			$('#Password').removeClass("is-hidden");
 		});
 	}
 	$(Load);
+	function NewPassword() {
+		API("account/profile/newpassword", false, (Data) => {
+
+		});
+	}
 </script>
 <div class="content">
+	<h1 class="title">User Profile</h1>
+	<table class="table subtitle">
+		<tbody>
+			<tr>
+				<td class="">Account ID: </td>
+				<td class="" id="UserID"></td>
+			</tr>
+			<tr>
+				<td class="">Full Name: </td>
+				<td class="" id="FullName"></td>
+			</tr>
+			<tr>
+				<td class="">Email Address: </td>
+				<td class="" id="Email"></td>
+			</tr>
+			<tr>
+				<td class="">UserName: </td>
+				<td class="" id="Username"></td>
+			</tr>
+			<tr>
+				<td class="">Password: </td>
+				<td class=""><button class="button is-info is-hidden" onclick="NewPassword();" id="Password"><span class="fas fa-key"></span> &nbsp; Change Password</button></td>
+			</tr>
+		</tbody>
+	</table>
 </div>

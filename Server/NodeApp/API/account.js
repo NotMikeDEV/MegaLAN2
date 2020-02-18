@@ -13,10 +13,32 @@ var SMTP_READY = database.query("SELECT Value FROM Settings WHERE Name = 'SENDGR
 module.exports = {
 	profile: async function (Session, Args, Data) {
 		if (!Session) return 403;
-		Data = JSON.parse(Data);
+		var User = (await database.query("SELECT UserID, Username, FullName, Email FROM Accounts WHERE UserID = ?", [Session.UserID]))[0];
+
+		if (Args == "newpassword") {
+			var AccountToken = (await crypto.randomBytes(16)).toString('hex');
+			await database.query("UPDATE Accounts SET Token = ? WHERE UserID = ?", [AccountToken, User.UserID]);
+			console.log("Password Request", User.UserID);
+			const msg = {
+				to: User.Email,
+				from: 'accounts@' + global.DomainName,
+				subject: 'MegaLAN Password Change',
+				text: 'Hi ' + User.FullName + ',\r\n'
+					+ 'You have requested a new password.\r\n'
+					+ 'To set your new password please click the link below, if it is not clickable then copy/paste it in to your browsers address bar.\r\n\r\n'
+					+ 'https://' + global.DomainName + '/API/account/validate/' + AccountToken,
+				html: '<h3>Hi ' + User.FullName + ',</h3>'
+					+ '<p>You have requested a new password.</p>'
+					+ '<p>To set your new password please click the link below.</p>'
+					+ '<p><a style="display:inline-block; background-color: #55F; border:1px solid #555; color:#FF5; border-radius:3px; padding:5px;" href="https://' + global.DomainName + '/API/account/validate/' + AccountToken + '">Click here to set a new password.</a></p>',
+			};
+			console.log("Send Email", "Account/Profile/NewPassword", msg);
+			await SMTP_READY;
+			sgMail.send(msg);
+		}
 		return {
 			Status: 200,
-			JSON: Session,
+			JSON: User,
 		}
 	},
 	validate: async function (Session, Args, Data) {
