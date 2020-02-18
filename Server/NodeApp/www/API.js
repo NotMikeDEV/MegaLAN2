@@ -19,7 +19,7 @@ function API(URL, Data, Callback) {
 		data: JSON.stringify(Data),
 		processData: false,
 		success: function (data) {
-			Callback(JSON.parse(data));
+			Callback(data);
 		},
 		error: function (jqXhr) {
 			if (jqXhr.status == 403) {
