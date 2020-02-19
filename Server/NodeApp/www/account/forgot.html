@@ -1,0 +1,60 @@
+<script>
+function RequestPassword() {
+	var Email = $('#Email').val();
+	$('#ErrorMessage').hide();
+
+	$.ajax({
+		url: "/API/account/forgot",
+		method: "POST",
+		contentType: 'application/json',
+		data: JSON.stringify({
+			Email:Email,
+		}),
+		processData: false,
+		success: function (Data) {
+			if (Data.Error) {
+				$('#ErrorMessage .text').text(Data.Error);
+				$('#ErrorMessage').show();
+			} else {
+				ShowError("Please check your email for further instructions.", () => {
+					window.history.back();
+				});
+			}
+		},
+		error: function (jqXhr) {
+			ShowError("Error sending request.");
+		}
+	});
+}
+</script>
+<div class="content">
+	<h1 class="title is-family-monospace is-size-1 has-text-success">
+		Request a reminder of your login details
+	</h1>
+	<div id="ErrorMessage" class="has-text-danger is-size-3 has-icons-left" style="display:none;">
+		<span class="icon is-small is-left">
+			<i class="fas fa-exclamation-triangle"></i>
+		</span>
+		<span>&nbsp;</span>
+		<span class="is-danger text"></span>
+	</div>
+
+	<div class="field email">
+		<label class="label email">Email Address</label>
+		<div class="control email has-icons-left has-icons-right">
+			<input class="input email" type="email" placeholder="Email Address" id="Email">
+			<span class="icon email is-small is-left">
+				<i class="fas fa-key"></i>
+			</span>
+		</div>
+	</div>
+
+	<div class="level is-grouped">
+		<div class="level-left">
+			<button class="button is-link is-light" onclick="window.history.back();">Cancel</button>
+		</div>
+		<div class="level-right">
+			<button class="button is-link" onclick="RequestPassword();">Request Reminder</button>
+		</div>
+	</div>
+</div>

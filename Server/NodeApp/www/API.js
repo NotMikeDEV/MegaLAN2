@@ -32,12 +32,20 @@ function API(URL, Data, Callback) {
 	});
 }
 
-function ShowError(ErrorText) {
+function ShowError(ErrorText, Callback) {
 	var Dialog = $('<DIV>').addClass('modal');
-	$('<DIV>').addClass('modal-background').appendTo(Dialog).click(()=>{Dialog.remove();});
+	$('<DIV>').addClass('modal-background').appendTo(Dialog).click(() => {
+		Dialog.remove();
+		if (Callback)
+			Callback();
+	});
 	var ContentHolder = $('<DIV>').addClass('modal-content').appendTo(Dialog);
 	var Content = $('<DIV>').addClass('box').appendTo(ContentHolder);
-	$('<BUTTON>').addClass('modal-close is-large').appendTo(Dialog).click(() => { Dialog.remove(); });
+	$('<BUTTON>').addClass('modal-close is-large').appendTo(Dialog).click(() => {
+		Dialog.remove();
+		if (Callback)
+			Callback();
+	});
 
 	Content.text(ErrorText);
 	Dialog.appendTo($('body')).addClass("is-active");
@@ -86,6 +94,9 @@ function ShowLogin(URL, Data, Callback) {
 			var ButtonsLeft = $('<DIV>').addClass('level-left').appendTo(Buttons);
 				var SignupButton = $('<BUTTON>').addClass('level-item button').appendTo(ButtonsLeft).text("Register Account").click(() => {
 					location.href = "/account/create.html";
+				});
+				var ForgotPasswordButton = $('<BUTTON>').addClass('level-item button').appendTo(ButtonsLeft).text("Forgotten Username/Password").click(() => {
+					location.href = "/account/forgot.html";
 				});
 			var ButtonsRight = $('<DIV>').addClass('level-right').appendTo(Buttons);
 				var LoginButton = $('<BUTTON>').addClass('level-item button is-success').appendTo(ButtonsRight).text("Log In").click(() => {
