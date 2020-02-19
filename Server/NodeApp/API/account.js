@@ -75,9 +75,8 @@ module.exports = {
 		var User = await database.query("SELECT UserID, Username, FullName FROM Accounts WHERE Token = ?", [Data.Token]);
 		console.log(Data, User);
 		if (User.length) {
-			var PasswordHashSHA1 = crypto.createHash('sha1').update(User[0].Username.toLowerCase() + Data.Password).digest('hex');
 			var PasswordHashSHA256 = crypto.createHash('sha256').update(User[0].Username.toLowerCase() + Data.Password).digest('hex');
-			await database.query("UPDATE Accounts SET PasswordSHA1 = ?, PasswordSHA256=?, Token=NULL WHERE Token = ?", [PasswordHashSHA1, PasswordHashSHA256, Data.Token]);
+			await database.query("UPDATE Accounts SET PasswordSHA256=?, Token=NULL WHERE Token = ?", [PasswordHashSHA256, Data.Token]);
 			return await Auth.login(Session, {}, JSON.stringify({Username: User[0].Username, Password: Data.Password}));
 		}
 		return {

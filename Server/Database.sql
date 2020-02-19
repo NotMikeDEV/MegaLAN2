@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS `DNS` (
 CREATE TABLE IF NOT EXISTS `Accounts` (
   `UserID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
   `Username` VARCHAR(33) COLLATE utf8_bin NOT NULL,
-  `PasswordSHA1` VARCHAR(40) COLLATE utf8_bin,
   `PasswordSHA256` VARCHAR(64) COLLATE utf8_bin,
   `FullName` text COLLATE utf8_bin NOT NULL,
   `Email` text COLLATE utf8_bin NOT NULL,
