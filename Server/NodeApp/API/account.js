@@ -5,7 +5,6 @@ const promisify = require("promisify-node");
 const crypto = promisify('crypto');
 
 var SMTP_READY = database.query("SELECT Value FROM Settings WHERE Name = 'SENDGRID_API_KEY'").then((Result) => {
-	console.log(Result);
 	if (Result.length)
 		sgMail.setApiKey(Result[0].Value);
 });

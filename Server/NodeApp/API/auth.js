@@ -28,7 +28,7 @@ module.exports = {
 		var User = await database.query("SELECT Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
 		if (!User.length)
 			return false;
-		if (User.Expire < Now + 360) // Rate-Limit updating of expire time
+		if (User[0].Expire <= (Now + 520)) // Rate-Limit updating of expire time
 			database.query("UPDATE Sessions SET Expire = ? WHERE SID = ?", [Now + 600, Token]);
 		return User[0];
 	},
