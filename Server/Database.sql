@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `DNS` (
   `Value` text COLLATE utf8_bin NOT NULL,
   `Expire` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+CREATE UNIQUE INDEX IF NOT EXISTS DNSEntries ON DNS (Hostname, Type, Value);
 
 CREATE TABLE IF NOT EXISTS `Accounts` (
   `UserID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
@@ -49,10 +50,10 @@ CREATE TABLE IF NOT EXISTS `Sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 INSERT IGNORE INTO Settings (Name, Value) VALUES ("SENDGRID_API_KEY", 'INSERT API KEY HERE');
-INSERT IGNORE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sendgrid.megalan.app', 0, 'sendgrid.net', 0);
-INSERT IGNORE INTO DNS (Hostname, Type, Value, Expire) VALUES ('4477715.megalan.app', 0, 'sendgrid.net', 0);
-INSERT IGNORE INTO DNS (Hostname, Type, Value, Expire) VALUES ('grid.megalan.app', 0, 'u4477715.wl216.sendgrid.net', 0);
-INSERT IGNORE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg._domainkey.megalan.app', 0, 'sg.domainkey.u4477715.wl216.sendgrid.net', 0);
-INSERT IGNORE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg2._domainkey.megalan.app', 0, 'sg2.domainkey.u4477715.wl216.sendgrid.net', 0);
+REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sendgrid.megalan.app', 0, 'sendgrid.net', 0);
+REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('4477715.megalan.app', 0, 'sendgrid.net', 0);
+REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('grid.megalan.app', 0, 'u4477715.wl216.sendgrid.net', 0);
+REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg._domainkey.megalan.app', 0, 'sg.domainkey.u4477715.wl216.sendgrid.net', 0);
+REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg2._domainkey.megalan.app', 0, 'sg2.domainkey.u4477715.wl216.sendgrid.net', 0);
 
 COMMIT;

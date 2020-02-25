@@ -25,22 +25,44 @@ var DNSHandler = async function (request, response) {
 		}));
 		return response.send(); // Send response without additional processing
 	}
-	var GotAnswer = false;
+	var Records = await database.query("SELECT Type, Value FROM DNS WHERE Hostname = ?", [hostname]); // Check for exact match CNAME records in database
+	if (Records.length) {
+		for (x in Records) {
+			if (Records[x].Type == 0) { // CNAME Records
+				response.answer.push(dns.CNAME({
+					name: hostname,
+					data: Records[x].Value,
+					ttl: 30,
+				}));
+				return response.send(); // Send response containing CNAME answer immediately (do not include further records)
+			}
+			if (Records[x].Type == 16 && question.type == 16) { // TXT Records (Used for ACME)
+				response.answer.push(dns.TXT({
+					name: hostname,
+					data: [Records[x].Value],
+					ttl: 5,
+				}));
+			}
+		}
+		return response.send(); // Send response without additional processing
+	}
+
+	var AddAdditional = false;
 	if (question.type == 6 && hostname == DomainName) { // SOA request
 		response.answer.push(dns.SOA({
 			name: DomainName,
-			ttl: 300,
+			ttl: 30,
 			primary: DomainName,
 			admin: 'MegaLAN',
 			serial: 1,
 			refresh: 600,
 			retry: 600,
 			expiration: 3600,
-			minimum: 60,
+			minimum: 30,
 		}));
-		GotAnswer = true;
+		AddAdditional = true;
 	}
-	if (question.type == 2 && hostname == DomainName) { // NS lookup for domain
+	else if (question.type == 2 && hostname == DomainName) { // NS lookup for domain
 		var Servers = await database.query("SELECT DISTINCT ServerName FROM Servers ORDER BY ServerName");
 		for (x in Servers) {
 			response.answer.push(dns.NS({
@@ -49,26 +71,9 @@ var DNSHandler = async function (request, response) {
 				ttl: 300,
 			}));
 		}
-		// Send Response as-is.
-		// Don't add the authority/additional sections, it's technically fine to duplicate records but some resolvers give valid-but-unusual looking answers.
-		return response.send();
+		AddAdditional = true;
 	}
-
-	var CNAME = await database.query("SELECT Value FROM DNS WHERE Type = 0 AND Hostname = ?", [hostname]); // Check for exact match CNAME records in database
-	if (CNAME.length) {
-		for (x in CNAME) {
-			response.answer.push(dns.CNAME({
-				name: hostname,
-				data: CNAME[x].Value,
-				ttl: 30,
-			}));
-		}
-		// Send Response as-is.
-		// Don't add the authority/additional sections.
-		return response.send();
-	}
-
-	if (question.type == 16) { // TXT request
+	else if (question.type == 16) { // TXT request
 		var Server = await database.query("SELECT ServerName, IP FROM Servers WHERE ServerName = ? ORDER BY IP", [Host[0]]);
 		if (Server.length > 0) // Matches server, generate SPF record with server IPs listed
 		{
@@ -86,39 +91,23 @@ var DNSHandler = async function (request, response) {
 				data: ["v=spf1 " + SPF + "-all"],
 				ttl: 30,
 			}));
-			GotAnswer = true;
 		}
 		else // Not a server hostname
 		{
-			if (Host[0] == '_acme-challenge') { // Dynamic ACME records
-				var DynamicRecords = await database.query("SELECT Value, Expire FROM DNS WHERE Hostname = ? AND TYPE = ?", [hostname, question.type]);
-				for (x in DynamicRecords) {
-					response.answer.push(dns.TXT({
-						name: hostname,
-						data: [DynamicRecords[x].Value],
-						ttl: 5,
-					}));
-					GotAnswer = true;
-				}
+			var Servers = await database.query("SELECT DISTINCT ServerName FROM Servers ORDER BY ServerName", [Host[0]]);
+			var SPF = "";
+			for (x in Servers) {
+				SPF += "include:" + Servers[x].ServerName + "." + DomainName + " ";
 			}
-			else { // All other TXT records - generate SPF record including all servers
-				var Servers = await database.query("SELECT DISTINCT ServerName FROM Servers ORDER BY ServerName", [Host[0]]);
-				var SPF = "";
-				for (x in Servers) {
-					SPF += "include:" + Servers[x].ServerName + "." + DomainName + " ";
-				}
-				// Add SPF record to response
-				response.answer.push(dns.TXT({
-					name: hostname,
-					data: ["v=spf1 " + SPF + "-all"],
-					ttl: 30,
-				}));
-				GotAnswer = true;
-			}
+			// Add SPF record to response
+			response.answer.push(dns.TXT({
+				name: hostname,
+				data: ["v=spf1 " + SPF + "-all"],
+				ttl: 30,
+			}));
 		}
 	}
-
-	if (question.type == 1) { // A Lookup (IPv4)
+	else if (question.type == 1) { // A Lookup (IPv4)
 		var Server = await database.query("SELECT ServerName, IP FROM Servers WHERE ServerName = ? ORDER BY IP", [Host[0]]);
 		if (Server.length) { // Matches specific server
 			for (x in Server) {
@@ -129,7 +118,6 @@ var DNSHandler = async function (request, response) {
 						address: IP.toString(),
 						ttl: 300,
 					}));
-					GotAnswer = true;
 				}
 			}
 		} else {
@@ -142,12 +130,10 @@ var DNSHandler = async function (request, response) {
 						address: IP.toString(),
 						ttl: 30,
 					}));
-					GotAnswer = true;
 				}
 			}
 		}
-	}
-	if (question.type == 28) { // AAAA Lookup (IPv6)
+	} else if (question.type == 28) { // AAAA Lookup (IPv6)
 		var Server = await database.query("SELECT ServerName, IP FROM Servers WHERE ServerName = ? ORDER BY IP", [Host[0]]);
 		if (Server.length) { // Matches specific server
 			for (x in Server) {
@@ -158,7 +144,6 @@ var DNSHandler = async function (request, response) {
 						address: IP.toString(),
 						ttl: 300,
 					}));
-					GotAnswer = true;
 				}
 			}
 		} else {
@@ -171,13 +156,25 @@ var DNSHandler = async function (request, response) {
 						address: IP.toString(),
 						ttl: 30,
 					}));
-					GotAnswer = true;
 				}
 			}
 		}
 	}
+	else { // No response
+		response.authority.push(dns.SOA({
+			name: DomainName,
+			ttl: 30,
+			primary: DomainName,
+			admin: 'MegaLAN',
+			serial: 1,
+			refresh: 600,
+			retry: 600,
+			expiration: 3600,
+			minimum: 30,
+		}));
+	}
 
-	if (GotAnswer) { // Add authority/additional sections.
+	if (AddAdditional) { // Add authority/additional sections.
 		var Servers = await database.query("SELECT ServerName, IP FROM Servers ORDER BY RAND()", [Host[0]]);
 		if (Servers.length) {
 			var DoneNS = {};
