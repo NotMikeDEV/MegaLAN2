@@ -62,7 +62,7 @@
 			<div class="navbar-end">
 				<div class="navbar-item">
 					<div class="buttons">
-						<a class="button is-info is-outlined is-hidden logout">
+						<a class="button is-info is-outlined is-hidden only-when-logged-in" onclick="Cookies.remove('SID');location.href = '/';">
 							<span class="fas fa-sign-out-alt"></span>
 							&nbsp;
 							<span>Log Out</span>
