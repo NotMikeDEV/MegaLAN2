@@ -39,7 +39,7 @@ function DoServer(server) {
 //    CleanServer(server);
     ExecRemote(server, 'mkdir -p /MegaLAN/');
 
-    PushRemote(server, "mariadb.lua Database.sql", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/mariadb.lua');
+    PushRemote(server, "mariadb.lua Database.sql TestData.sql", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/mariadb.lua');
 
     PushRemote(server, "nodeapp.lua NodeApp", "/MegaLAN/"); ExecRemote(server, 'chmod +x /MegaLAN/nodeapp.lua /MegaLAN/NodeApp/*.js && /MegaLAN/nodeapp.lua stop');
 
