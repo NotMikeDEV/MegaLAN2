@@ -10,7 +10,7 @@ module.exports = {
 		var User = await database.query("SELECT UserID FROM Accounts WHERE UserID = ? AND PasswordSHA256 = ?", [UserID, PasswordHashSHA256]);
 		if (User.length) {
 			var SessionID = (await crypto.randomBytes(20)).toString('hex');
-			await database.query("INSERT INTO Sessions (SID, UserID, Expire) VALUES (?, ?, ?)", [SessionID, User[0].UserID, (new Date()/1000) + 900]);
+			await database.query("INSERT INTO Sessions (SID, UserID, Expire) VALUES (?, ?, ?)", [SessionID, User[0].UserID, (new Date()/1000) + 60]);
 			return {
 				Status: 200,
 				JSON: { OK: true, SessionID: SessionID },
@@ -28,8 +28,8 @@ module.exports = {
 		var User = await database.query("SELECT Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
 		if (!User.length)
 			return false;
-		if (User[0].Expire <= (Now + 520)) // Rate-Limit updating of expire time
-			database.query("UPDATE Sessions SET Expire = ? WHERE SID = ?", [Now + 600, Token]);
+		if (User[0].Expire <= (Now + 270)) // Rate-Limit updating of expire time
+			database.query("UPDATE Sessions SET Expire = ? WHERE SID = ?", [Now + 300, Token]);
 		return User[0];
 	},
 };
