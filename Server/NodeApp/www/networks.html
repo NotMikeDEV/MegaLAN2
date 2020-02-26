@@ -1,0 +1,64 @@
+<script>
+	function RenderList(Data) {
+		var MyList = $('#MyNetworkList').empty();
+		var PublicList = $('#NetworkList').empty();
+		for (var x in Data) {
+			var Row = $('<TR>');
+			var Icon = $('<SPAN>').addClass('icon').appendTo($('<TD>').appendTo(Row));
+			if (Data[x].Type == "Private")
+				$('<I>').addClass('fas fa-user-shield').appendTo(Icon);
+			if (Data[x].Type == "Password")
+				$('<I>').addClass('fas fa-key').appendTo(Icon);
+
+			$('<TD>').appendTo(Row).text(Data[x].Name);
+
+			if (Data[x].Access) {
+				Row.addClass('is-hoverable');
+				Row.css('cursor', 'pointer');
+				var ManageIcon = $('<SPAN>').addClass('icon').appendTo($('<TD>').appendTo(Row));
+				$('<I>').addClass('fas fa-edit').appendTo(ManageIcon);
+			}
+			if (Data[x].Access == 'Admin') {
+				Row.appendTo(MyList);
+			}
+			else {
+				Row.appendTo(PublicList);
+			}
+			console.log(Data[x]);
+		}
+	}
+	$(function () {
+		API("networks/list", false, RenderList);
+	});
+</script>
+<div class="content">
+	<button class="button only-when-logged-out" onclick="ShowLogin('networks/list', false, RenderList);">
+		Log in to manage your own networks.
+	</button>
+	<table class="table only-when-logged-in">
+		<thead class="title">
+			<tr>
+				<td>
+				</td>
+				<td width="100%">
+					My Networks
+				</td>
+			</tr>
+		</thead>
+		<tbody id="MyNetworkList">
+		</tbody>
+	</table>
+	<table class="table">
+		<thead class="title">
+			<tr>
+				<td>
+				</td>
+				<td width="100%">
+					Public Networks
+				</td>
+			</tr>
+		</thead>
+		<tbody id="NetworkList">
+		</tbody>
+	</table>
+</div>

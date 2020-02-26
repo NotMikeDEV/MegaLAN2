@@ -50,10 +50,25 @@ CREATE TABLE IF NOT EXISTS `Sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 INSERT IGNORE INTO Settings (Name, Value) VALUES ("SENDGRID_API_KEY", 'INSERT API KEY HERE');
-REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sendgrid.megalan.app', 0, 'sendgrid.net', 0);
-REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('4477715.megalan.app', 0, 'sendgrid.net', 0);
-REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('grid.megalan.app', 0, 'u4477715.wl216.sendgrid.net', 0);
-REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg._domainkey.megalan.app', 0, 'sg.domainkey.u4477715.wl216.sendgrid.net', 0);
-REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sg2._domainkey.megalan.app', 0, 'sg2.domainkey.u4477715.wl216.sendgrid.net', 0);
+
+CREATE TABLE IF NOT EXISTS `Networks` (
+  `VLANID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
+  `Name` VARCHAR(150) COLLATE utf8_bin NOT NULL,
+  `Description` TEXT COLLATE utf8_bin,
+  `Type` ENUM('Public', 'Private') NOT NULL,
+  `IPv4` TEXT COLLATE utf8_bin DEFAULT NULL,
+  `CryptoKey` VARCHAR(64) COLLATE utf8_bin,
+  PRIMARY KEY (`VLANID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE UNIQUE INDEX IF NOT EXISTS VLANID ON Networks (Name);
+
+CREATE TABLE IF NOT EXISTS `NetworkUsers` (
+  `VLANID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
+  `UserID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
+  `Type` ENUM('Admin', 'Member') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE UNIQUE INDEX IF NOT EXISTS NetworkUsers ON NetworkUsers (VLANID, UserID);
 
 COMMIT;
