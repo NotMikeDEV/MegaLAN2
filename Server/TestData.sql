@@ -2,7 +2,7 @@ SET AUTOCOMMIT = 0;
 START TRANSACTION;
 USE MegaLAN;
 
-REPLACE INTO `Accounts` VALUES ('05617e37835fbd611d57f3c6e50dfff58e654aec','NotMike','2aca61680e64b878ad8e9b2afcfbd5500281bd72','3dc9eb3eeb98ea1b207ec1c4ff35539aa7c2744bb7bc4beff45b606fa3c4614f','Mike Test Account','NotMike@NotMike.co.uk','000000');
+REPLACE INTO `Accounts` VALUES ('05617e37835fbd611d57f3c6e50dfff58e654aec','NotMike','3dc9eb3eeb98ea1b207ec1c4ff35539aa7c2744bb7bc4beff45b606fa3c4614f','Mike Test Account','NotMike@NotMike.co.uk','000000');
 
 DELETE FROM DNS;
 REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('sendgrid.megalan.app', 0, 'sendgrid.net', 0);

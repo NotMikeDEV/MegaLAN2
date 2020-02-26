@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS `Accounts` (
   PRIMARY KEY (`UserID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-CREATE INDEX IF NOT EXISTS Usernames ON Accounts (Username);
-CREATE INDEX IF NOT EXISTS Passwords ON Accounts (PasswordSHA1, PasswordSHA256);
+CREATE INDEX IF NOT EXISTS Users ON Accounts (Username, PasswordSHA256);
 CREATE INDEX IF NOT EXISTS Token ON Accounts (Token);
 
 CREATE TABLE IF NOT EXISTS `Sessions` (
