@@ -109,10 +109,18 @@ async function Init() {
                         return res.end("Authentication Required");
                     }
                     if (Response.JSON) { // Response.JSON is an object to be sent as JSON
+                        if (req.headers['accept-encoding'] && req.headers['accept-encoding'].indexOf('gzip') != -1) { // Send gzipped
+                            res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/json', ...Response.Headers, 'Content-Encoding': 'gzip' });
+                            return res.end(await zlib.gzip(JSON.stringify(Response.JSON)));
+                        }
                         res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/json', ...Response.Headers });
                         return res.end(JSON.stringify(Response.JSON));
                     }
                     if (Response.Page) { // Response.Page is HTML that should be wrapped in template
+                        if (req.headers['accept-encoding'] && req.headers['accept-encoding'].indexOf('gzip') != -1) { // Send gzipped
+                            res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', ...Response.Headers, 'Content-Encoding': 'gzip' });
+                            return res.end(await zlib.gzip(HTM_Template.replace("$$CONTENT$$", Response.Page)));
+                        }
                         res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', ...Response.Headers });
                         return res.end(HTM_Template.replace("$$CONTENT$$", Response.Page));
                     }
