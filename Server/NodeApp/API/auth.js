@@ -13,7 +13,8 @@ module.exports = {
 			await database.query("INSERT INTO Sessions (SID, UserID, Expire) VALUES (?, ?, ?)", [SessionID, User[0].UserID, (new Date()/1000) + 60]);
 			return {
 				Status: 200,
-				JSON: { OK: true, SessionID: SessionID },
+				Headers: { Authorization: SessionID },
+				JSON: { OK: true },
 			};
 		}
 		else {
@@ -25,7 +26,7 @@ module.exports = {
 	},
 	Session: async function (Token) {
 		var Now = new Date() / 1000;
-		var User = await database.query("SELECT Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
+		var User = await database.query("SELECT SID, Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
 		if (!User.length)
 			return false;
 		if (User[0].Expire <= (Now + 270)) // Rate-Limit updating of expire time

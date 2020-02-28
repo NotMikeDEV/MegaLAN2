@@ -99,8 +99,13 @@ async function Init() {
                     var Command = Path[3]; // Function to call is third parameter in URL
                     var API = require("./API/" + Path[2] + ".js"); // Load API Script
                     var Session = false;
+                    var ServerHeaders = {
+                        Server: ServerName + "." + DomainName,
+                    };
                     if (req.headers['authorization']) { // If user gave an auth token, get their session.
                         Session = await require("./API/auth.js").Session(req.headers['authorization']);
+                        if (Session)
+                            ServerHeaders['Authorization'] = Session.SID;
                     }
                     var Response = await API[Command](Session, Path.slice(4), RequestBody); // Call relevant function, passes optional URL parameters along with raw request body.
 
@@ -110,7 +115,7 @@ async function Init() {
                     }
                     if (Response.JSON) { // Response.JSON is an object to be sent as JSON
                         if (req.headers['accept-encoding'] && req.headers['accept-encoding'].indexOf('gzip') != -1) { // Send gzipped
-                            res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/json', ...Response.Headers, 'Content-Encoding': 'gzip' });
+                            res.writeHead(Response.Status, { ...ServerHeaders, 'Content-Type': 'text/json', ...Response.Headers, 'Content-Encoding': 'gzip' });
                             return res.end(await zlib.gzip(JSON.stringify(Response.JSON)));
                         }
                         res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/json', ...Response.Headers });
@@ -118,14 +123,14 @@ async function Init() {
                     }
                     if (Response.Page) { // Response.Page is HTML that should be wrapped in template
                         if (req.headers['accept-encoding'] && req.headers['accept-encoding'].indexOf('gzip') != -1) { // Send gzipped
-                            res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', ...Response.Headers, 'Content-Encoding': 'gzip' });
+                            res.writeHead(Response.Status, { ...ServerHeaders, 'Content-Type': 'text/html', ...Response.Headers, 'Content-Encoding': 'gzip' });
                             return res.end(await zlib.gzip(HTM_Template.replace("$$CONTENT$$", Response.Page)));
                         }
-                        res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, 'Content-Type': 'text/html', ...Response.Headers });
+                        res.writeHead(Response.Status, { ...ServerHeaders, 'Content-Type': 'text/html', ...Response.Headers });
                         return res.end(HTM_Template.replace("$$CONTENT$$", Response.Page));
                     }
                      // ELSE Response.Body is raw response
-                    res.writeHead(Response.Status, { Server: ServerName + "." + DomainName, ...Response.Headers }); // Send Response
+                    res.writeHead(Response.Status, { ...ServerHeaders, ...Response.Headers }); // Send Response
                     return res.end(Response.Body);
                 } catch (e) {
                     console.error(e);

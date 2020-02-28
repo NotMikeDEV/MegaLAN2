@@ -18,7 +18,16 @@ function API(URL, Data, Callback) {
 		contentType: 'application/json',
 		data: JSON.stringify(Data),
 		processData: false,
-		success: function (data) {
+		success: function (data, status, obj) {
+			if (obj.getResponseHeader("Authorization")) {
+				MySessionID = obj.getResponseHeader("Authorization");
+				Cookies.set("SID", obj.getResponseHeader("Authorization"));
+				SetLoginStatus();
+			} else {
+				Cookies.remove("SID");
+				MySessionID = false;
+				SetLoginStatus();
+			}
 			Callback(data);
 		},
 		error: function (jqXhr) {
@@ -109,13 +118,13 @@ function ShowLogin(URL, Data, Callback) {
 							Password: Password.val(),
 						}),
 						processData: false,
-						success: function (data) {
+						success: function (data, status, obj) {
 							if (data.Error) {
 								ErrorText.text(data.Error);
 								Error.show();
 							}
-							if (data.SessionID) {
-								MySessionID = data.SessionID;
+							if (data.OK) {
+								MySessionID = obj.getResponseHeader("Authorization");
 								Cookies.set("SID", MySessionID);
 								Dialog.remove();
 								SetLoginStatus();
