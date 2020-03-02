@@ -26,7 +26,7 @@ module.exports = {
 	},
 	Session: async function (Token) {
 		var Now = new Date() / 1000;
-		var User = await database.query("SELECT SID, Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions WHERE SID = ? AND Expire >= ?", [Token, Now]);
+		var User = await database.query("SELECT SID, Accounts.UserID, Username, FullName, Expire FROM Accounts JOIN Sessions ON Accounts.UserID = Sessions.UserID WHERE SID = ? AND Expire >= ?", [Token, Now]);
 		if (!User.length)
 			return false;
 		if (User[0].Expire <= (Now + 270)) // Rate-Limit updating of expire time
