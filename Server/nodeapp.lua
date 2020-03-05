@@ -24,5 +24,6 @@ function background()
 	exec("cd /MegaLAN/NodeApp && while true; do ./DNSServer.js " .. DomainName .. " " .. IPv4 .. " " .. IPv6 ..  "; sleep 1; done&")
 	exec("cd /MegaLAN/NodeApp && while true; do ./HTTPSServer.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
 	exec("cd /MegaLAN/NodeApp && while true; do ./Heartbeat.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
+	exec("cd /MegaLAN/NodeApp && while true; do ./UDPServer.js " .. ServerName .. " " .. DomainName .. " " .. IPv4 .. " " .. IPv6 .. "; sleep 1; done&")
 	return 0
 end
