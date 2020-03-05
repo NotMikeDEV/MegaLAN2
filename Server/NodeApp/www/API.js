@@ -1,4 +1,6 @@
 var MySessionID = Cookies.get("SID");
+var MyUserID;
+var MyUsername;
 function SetLoginStatus() {
 	if (MySessionID) {
 		$('.only-when-logged-in').removeClass('is-hidden');
@@ -21,12 +23,19 @@ function API(URL, Data, Callback) {
 		success: function (data, status, obj) {
 			if (obj.getResponseHeader("Authorization")) {
 				MySessionID = obj.getResponseHeader("Authorization");
-				Cookies.set("SID", obj.getResponseHeader("Authorization"));
+				Cookies.set("SID", MySessionID);
 				SetLoginStatus();
 			} else {
 				Cookies.remove("SID");
 				MySessionID = false;
 				SetLoginStatus();
+			}
+			if (MySessionID) {
+				MyUserID = obj.getResponseHeader("UserID");
+				MyUsername = obj.getResponseHeader("Username");
+			} else {
+				MyUserID = false;
+				MyUsername = false;
 			}
 			Callback(data);
 		},

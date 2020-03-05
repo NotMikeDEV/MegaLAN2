@@ -104,8 +104,11 @@ async function Init() {
                     };
                     if (req.headers['authorization']) { // If user gave an auth token, get their session.
                         Session = await require("./API/auth.js").Session(req.headers['authorization']);
-                        if (Session)
+                        if (Session) {
                             ServerHeaders['Authorization'] = Session.SID;
+                            ServerHeaders['UserID'] = Session.UserID;
+                            ServerHeaders['Username'] = Session.Username;
+                        }
                     }
                     var Response = await API[Command](Session, Path.slice(4), RequestBody); // Call relevant function, passes optional URL parameters along with raw request body.
 
