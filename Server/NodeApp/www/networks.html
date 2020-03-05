@@ -192,6 +192,7 @@
 							}
 							if (Data.OK) {
 								Dialog.remove();
+								API("networks/list", false, RenderList);
 							}
 						});
 					});

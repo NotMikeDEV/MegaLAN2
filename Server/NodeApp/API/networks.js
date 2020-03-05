@@ -51,7 +51,6 @@ module.exports = {
 				Data.IPv4 = require('ip6addr').createCIDR(Data.IPv4);
 			else
 				Data.IPv4 = require('ip6addr').createCIDR("10.0.0.0/24");
-			console.log(Data.IPv4.address().kind());
 		} catch (e) {
 			console.log(e);
 			return {
@@ -95,9 +94,9 @@ module.exports = {
 
 		await database.query("DELETE FROM NetworkUsers WHERE VLANID = ?", [Data.VLANID]);
 		database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, Session.UserID, 'Admin']);
-		Data.Members.map((User) => {
+		Data.Members.map(async (User) => {
 			if (User.UserID != Session.UserID)
-				database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, User.UserID, User.Type]);
+				await Promise.all(database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, User.UserID, User.Type]));
 		});
 		return {
 			Status: 200,
