@@ -4,6 +4,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>Server</Name>
     <RootNamespace>Server</RootNamespace>
+    <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -11,7 +12,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>f92f6c81-eaca-4cef-8240-8c7a66bdba88</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>app.js</StartupFile>
+    <StartupFile>deploy.js</StartupFile>
     <StartWebBrowser>False</StartWebBrowser>
     <SearchPath>
     </SearchPath>
@@ -19,7 +20,7 @@
     <OutputPath>.</OutputPath>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
-    <StartWebBrowser>false</StartWebBrowser>
+    <StartWebBrowser>False</StartWebBrowser>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -28,9 +29,50 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="app.js" />
+    <Content Include="Database.sql" />
+    <Content Include="deploy.js" />
+    <Content Include="launch.sh" />
+    <Content Include="mariadb.lua" />
+    <Content Include="nodeapp.lua" />
+    <Content Include="NodeApp\API\account.js" />
+    <Content Include="NodeApp\API\auth.js" />
+    <Content Include="NodeApp\API\networks.js" />
+    <Content Include="NodeApp\API\test.js" />
+    <Content Include="NodeApp\DNSServer.js" />
+    <Content Include="NodeApp\Heartbeat.js" />
+    <Content Include="NodeApp\HTTPSServer.js" />
+    <Content Include="NodeApp\Include\ACME.js" />
+    <Content Include="NodeApp\Include\SQL.js" />
+    <Content Include="NodeApp\template.html" />
+    <Content Include="NodeApp\UDPServer.js" />
+    <Content Include="NodeApp\www\account.html" />
+    <Content Include="NodeApp\www\account\create.html" />
+    <Content Include="NodeApp\www\account\forgot.html" />
+    <Content Include="NodeApp\www\account\password.html" />
+    <Content Include="NodeApp\www\API.js" />
+    <Content Include="NodeApp\www\bulma.min.css" />
+    <Content Include="NodeApp\www\default.html" />
+    <Content Include="NodeApp\www\downloads.html" />
+    <Content Include="NodeApp\www\favicon.ico" />
+    <Content Include="NodeApp\www\fontawesome.min.js" />
+    <Content Include="NodeApp\www\images\ui-icons_777777_256x240.png" />
+    <Content Include="NodeApp\www\jquery-3.4.1.min.js" />
+    <Content Include="NodeApp\www\jquery-ui.min.css" />
+    <Content Include="NodeApp\www\jquery-ui.min.js" />
+    <Content Include="NodeApp\www\js.cookie.min.js" />
+    <Content Include="NodeApp\www\Logo.png" />
+    <Content Include="NodeApp\www\networks.html" />
     <Content Include="package.json" />
     <Content Include="README.md" />
+    <Content Include="TestData.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="NodeApp\" />
+    <Folder Include="NodeApp\API\" />
+    <Folder Include="NodeApp\Include\" />
+    <Folder Include="NodeApp\www\" />
+    <Folder Include="NodeApp\www\account\" />
+    <Folder Include="NodeApp\www\images\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
 </Project>
