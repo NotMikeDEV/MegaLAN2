@@ -53,7 +53,6 @@ INSERT IGNORE INTO Settings (Name, Value) VALUES ("SENDGRID_API_KEY", 'INSERT AP
 CREATE TABLE IF NOT EXISTS `Networks` (
   `VLANID` VARCHAR(40) COLLATE utf8_bin NOT NULL,
   `Name` VARCHAR(150) COLLATE utf8_bin NOT NULL,
-  `Description` TEXT COLLATE utf8_bin,
   `Type` ENUM('Public', 'Private') NOT NULL,
   `IPv4` TEXT COLLATE utf8_bin DEFAULT NULL,
   `CryptoKey` VARCHAR(64) COLLATE utf8_bin,
