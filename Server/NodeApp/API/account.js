@@ -50,6 +50,26 @@ module.exports = {
 			JSON: {OK: true},
 		}
 	},
+	info: async function (Session, Args, Data) {
+		if (!Session) return 403;
+		Data = JSON.parse(Data);
+		if (!Data.Username)
+			return {
+				Status: 200,
+				JSON: { Error: 'No username specified' },
+			}
+		var User = await database.query("SELECT UserID, Username FROM Accounts WHERE Username = ?", [Data.Username]);
+		if (User.length)
+			return {
+				Status: 200,
+				JSON: User[0],
+			};
+		else
+			return {
+				Status: 200,
+				JSON: { Error: 'User Not Found' },
+			};
+	},
 	profile: async function (Session, Args, Data) {
 		if (!Session) return 403;
 		var User = (await database.query("SELECT UserID, Username, FullName, Email FROM Accounts WHERE UserID = ?", [Session.UserID]))[0];
