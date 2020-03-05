@@ -16,4 +16,92 @@ module.exports = {
 			JSON: Networks
 		};
 	},
+	details: async function (Session, Args, Data) {
+		if (!Session)
+			return {
+				Status: 403,
+			};
+
+		var VLANID = Args[0];
+		var Access = await database.query("SELECT Type FROM NetworkUsers WHERE VLANID = ? AND UserID = ?", [VLANID, Session.UserID]);
+		if (!Access.length)
+			return {
+				Status: 403,
+			};
+
+		var VLAN = (await database.query("SELECT VLANID, Name, Type, IPv4, CryptoKey FROM Networks WHERE VLANID = ?", [VLANID]))[0];
+		VLAN.MyAccess = Access[0].Type;
+		VLAN.Key = VLAN.CryptoKey != null ? '********' : null;
+		delete VLAN.CryptoKey;
+		VLAN.Members = await database.query("SELECT NetworkUsers.UserID, NetworkUsers.Type, Username FROM NetworkUsers JOIN Accounts ON NetworkUsers.UserID = Accounts.UserID WHERE VLANID = ?", [VLANID]);
+		return {
+			Status: 200,
+			JSON: VLAN
+		};
+	},
+	save: async function (Session, Args, Data) {
+		if (!Session)
+			return {
+				Status: 403,
+			};
+
+		Data = JSON.parse(Data);
+		try {
+			if (Data.IPv4)
+				Data.IPv4 = require('ip6addr').createCIDR(Data.IPv4);
+			else
+				Data.IPv4 = require('ip6addr').createCIDR("10.0.0.0/24");
+			console.log(Data.IPv4.address().kind());
+		} catch (e) {
+			console.log(e);
+			return {
+				Status: 200,
+				JSON: { Error: 'Invalid subnet mask' },
+			};
+		}
+		if (!Data.VLANID)
+		{
+			if (!Data.Name) {
+				return {
+					Status: 200,
+					JSON: { Error: 'Name not specified' },
+				};
+			}
+			var Existing = (await database.query("SELECT VLANID FROM Networks WHERE Name = ? ", [Data.Name]));
+			if (Existing.length) {
+				return {
+					Status: 200,
+					JSON: { Error: 'Name in use' },
+				};
+			}
+			Data.VLANID = (await crypto.randomBytes(20)).toString('hex');
+			await database.query("INSERT INTO Networks (VLANID, Name) VALUES (?,?)", [Data.VLANID, Data.Name]);
+			await database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, Session.UserID, 'Admin']);
+		}
+		if ((await database.query("SELECT Type FROM NetworkUsers WHERE UserID = ? AND VLANID = ?", [Session.UserID, Data.VLANID]))[0].Type != 'Admin') {
+			return {
+				Status: 200,
+				JSON: { Error: 'Access Denied' },
+			};
+		}
+		await database.query("UPDATE Networks SET Type = ? WHERE VLANID = ?", [Data.Type, Data.VLANID]);
+		await database.query("UPDATE Networks SET IPv4 = ? WHERE VLANID = ?", [Data.IPv4.toString(), Data.VLANID]);
+		if (Data.Key && Data.Key != '********') {
+			var CryptoKey = crypto.createHash('sha256').update(Data.VLANID + Data.Key).digest('hex');;
+			await database.query("UPDATE Networks SET CryptoKey = ? WHERE VLANID = ?", [CryptoKey, Data.VLANID]);
+		}else if (Data.Key != '********') {
+			await database.query("UPDATE Networks SET CryptoKey = NULL WHERE VLANID = ?", [Data.VLANID]);
+		}
+
+		await database.query("DELETE FROM NetworkUsers WHERE VLANID = ?", [Data.VLANID]);
+		database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, Session.UserID, 'Admin']);
+		Data.Members.map((User) => {
+			if (User.UserID != Session.UserID)
+				database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, User.UserID, User.Type]);
+		});
+		return {
+			Status: 200,
+			JSON: { OK: true },
+		};
+	}
 };

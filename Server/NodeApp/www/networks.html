@@ -1,5 +1,10 @@
 <script>
 	function RenderList(Data) {
+		function MakeClickable(Row, VLANID) {
+			Row.click(() => {
+				VLANDialog(VLANID);
+			});
+		}
 		var MyList = $('#MyNetworkList').empty();
 		var PublicList = $('#NetworkList').empty();
 		for (var x in Data) {
@@ -13,10 +18,10 @@
 			$('<TD>').appendTo(Row).text(Data[x].Name);
 
 			if (Data[x].Access) {
-				Row.addClass('is-hoverable');
 				Row.css('cursor', 'pointer');
-				var ManageIcon = $('<SPAN>').addClass('icon').appendTo($('<TD>').appendTo(Row));
+				var ManageIcon = $('<SPAN>').addClass('icon').appendTo($('<TD>').addClass('has-text-right').appendTo(Row));
 				$('<I>').addClass('fas fa-edit').appendTo(ManageIcon);
+				MakeClickable(Row, Data[x].VLANID);
 			}
 			if (Data[x].Access == 'Admin') {
 				Row.appendTo(MyList);
@@ -30,12 +35,207 @@
 	$(function () {
 		API("networks/list", false, RenderList);
 	});
+
+	function VLANDialog(VLANID) {
+		var Dialog = $('<DIV>').addClass('modal');
+		$('<DIV>').addClass('modal-background').appendTo(Dialog);
+		var DialogCard = $('<DIV>').addClass('modal-card').appendTo(Dialog);
+		Dialog.appendTo($('body')).addClass("is-active");
+
+		var Heading = $('<HEADER>').addClass('modal-card-head').appendTo(DialogCard);
+		var Title = $('<P>').addClass('modal-card-title').appendTo(Heading);
+		$('<BUTTON>').addClass('delete').appendTo(Heading).click(() => { Dialog.remove(); });
+
+		var Body = $('<SECTION>').addClass('modal-card-body').appendTo(DialogCard);
+		var Form = $('<FORM>').addClass('content').appendTo(Body);
+
+		var Error = $('<DIV>').appendTo(Form).hide()
+			.addClass('title has-text-danger');
+			var ErrorIcon = $('<SPAN>').addClass('icon').appendTo(Error);
+				$('<I>').addClass('fas fa-exclamation-triangle').appendTo(ErrorIcon);
+			$('<SPAN>').text(" ").appendTo(Error);
+			var ErrorText = $('<SPAN>').appendTo(Error);
+
+		var NameField = $('<DIV>').addClass('field is-horizontal').appendTo(Form);
+			var NameLabel = $('<DIV>').addClass('field-label is-normal').appendTo(NameField);
+				$('<LABEL>').addClass('label').appendTo(NameLabel).text("Name");
+			var NameContent = $('<DIV>').addClass('field-body').appendTo(NameField);
+				var NameControl = $('<DIV>').addClass('field control has-icons-left has-icons-right').appendTo(NameContent);
+					var Name = $('<INPUT>').addClass('input').prop('placeholder', 'Name').appendTo(NameControl);
+					var NameIcon = $('<SPAN>').addClass('icon is-small is-left').appendTo(NameControl);
+						$('<I>').addClass('fas fa-network-wired').appendTo(NameIcon);
+
+		var SubnetField = $('<DIV>').addClass('field is-horizontal').appendTo(Form);
+			var SubnetLabel = $('<DIV>').addClass('field-label is-normal').appendTo(SubnetField);
+				$('<LABEL>').addClass('label').appendTo(SubnetLabel).text("Subnet");
+			var SubnetContent = $('<DIV>').addClass('field-body').appendTo(SubnetField);
+				var SubnetControl = $('<DIV>').addClass('field control has-icons-left has-icons-right').appendTo(SubnetContent);
+					var Subnet = $('<INPUT>').addClass('input').prop('type', 'text').prop('placeholder', '10.0.0.0/24').appendTo(SubnetControl);
+					var SubnetIcon = $('<SPAN>').addClass('icon is-small is-left').appendTo(SubnetControl);
+						$('<I>').addClass('fas fa-ellipsis-h').appendTo(SubnetIcon);
+
+		var NetworkTypeField = $('<DIV>').addClass('field is-horizontal').appendTo(Form);
+			var NetworkTypeLabel = $('<DIV>').addClass('field-label is-normal').appendTo(NetworkTypeField);
+				$('<LABEL>').addClass('label').appendTo(NetworkTypeLabel).text("Type");
+			var NetworkTypeContent = $('<DIV>').addClass('field-body').appendTo(NetworkTypeField);
+				var NetworkTypeControl = $('<FIELDSET>').addClass('field control').appendTo(NetworkTypeContent);
+					var NetworkTypePublicLabel = $('<LABEL>').addClass('radio').appendTo(NetworkTypeControl).text("Public").prop("for", "networktypepublic");
+					var NetworkTypePublicInput = $('<INPUT>').addClass('radio networktype').appendTo(NetworkTypeControl).prop("type", "radio").prop("name", "networktype").prop("id", "networktypepublic");
+					var NetworkTypePrivateLabel = $('<LABEL>').addClass('radio').appendTo(NetworkTypeControl).text("Private").prop("for", "networktypeprivate");
+					var NetworkTypePrivateInput = $('<INPUT>').addClass('radio networktype').appendTo(NetworkTypeControl).prop("type", "radio").prop("name", "networktype").prop("id", "networktypeprivate");
+		$(".networktype").checkboxradio();
+		NetworkTypeControl.controlgroup();
+
+		var KeyField = $('<DIV>').addClass('field is-horizontal').appendTo(Form).hide();
+			var KeyLabel = $('<DIV>').addClass('field-label is-normal').appendTo(KeyField);
+				$('<LABEL>').addClass('label').appendTo(KeyLabel).text("Network Key");
+			var KeyContent = $('<DIV>').addClass('field-body').appendTo(KeyField);
+				var KeyControl = $('<DIV>').addClass('field control has-icons-left has-icons-right').appendTo(KeyContent);
+					var Key = $('<INPUT>').addClass('input').prop('type', 'text').prop('placeholder', 'Public Network').appendTo(KeyControl);
+					var KeyIcon = $('<SPAN>').addClass('icon is-small is-left').appendTo(KeyControl);
+						$('<I>').addClass('fas fa-key').appendTo(KeyIcon);
+		NetworkTypeControl.on("change", function(event){
+			if (NetworkTypePublicInput.prop("checked")) {
+				KeyField.show();
+			} else {
+				KeyField.hide();
+			}
+		});
+
+
+		var NetworkMembersField = $('<DIV>').addClass('field is-horizontal').appendTo(Form);
+			var NetworkMembersLabel = $('<DIV>').addClass('field-label is-normal').appendTo(NetworkMembersField);
+				$('<LABEL>').addClass('label').appendTo(NetworkMembersLabel).text("Members");
+		var NetworkMembersContent = $('<DIV>').addClass('field-body').appendTo(NetworkMembersField);
+
+		var Users = [];
+		var MyAccess = 'Admin';
+
+		function RenderMembers() {
+			NetworkMembersContent.empty();
+			var List = $('<TABLE>').appendTo(NetworkMembersContent);
+			Users.map((User, x) => {
+				var Row = $('<TR>').appendTo(List);
+				var Username = $('<TD>').width("100%").appendTo(Row);
+					$('<DIV>').appendTo(Username).text(User.Username);
+				if (User.UserID != MyUserID && MyAccess == 'Admin') {
+					var UserType = $('<TD>').width("100%").appendTo(Row);
+					var UserTypeSelect = $('<SELECT>').appendTo(UserType).addClass('select');
+					var UserTypeAdmin = $('<OPTION>').appendTo(UserTypeSelect).prop('value', 'Admin').text("Admin");
+					var UserTypeMember = $('<OPTION>').appendTo(UserTypeSelect).prop('value', 'Member').text("Member");
+					UserTypeSelect.val(User.Type);
+					UserTypeSelect.on("change", function (event) {
+						Users[x].Type = UserTypeSelect.val();
+					});
+					var DeleteIcon = $('<TD>').appendTo(Row).addClass('button').click(() => {
+						delete Users[x];
+						RenderMembers();
+					});
+					$('<DIV>').appendTo(DeleteIcon).addClass('delete');
+				}
+				else {
+					var UserType = $('<TD>').width("100%").appendTo(Row).text(User.Type);
+				}
+			});
+			if (MyAccess == 'Admin') {
+				var Row = $('<TR>').appendTo(List);
+				var UsernameCell = $('<TD>').width("100%").appendTo(Row);
+					var Username = $('<INPUT>').appendTo(UsernameCell).addClass('input').prop('placeholder', 'Username');
+
+				var UserType = $('<TD>').width("100%").appendTo(Row);
+				var UserTypeSelect = $('<SELECT>').appendTo(UserType).addClass('select');
+				var UserTypeAdmin = $('<OPTION>').appendTo(UserTypeSelect).prop('value', 'Admin').text("Admin");
+				var UserTypeMember = $('<OPTION>').appendTo(UserTypeSelect).prop('value', 'Member').text("Member");
+				UserTypeSelect.val("Member");
+
+				var AddIcon = $('<TD>').appendTo(Row).addClass("button").click(() => {
+						API('account/info', { Username: Username.val() }, (Data) => {
+							if (Data.Error) {
+								ErrorText.text(Data.Error);
+								return Error.show();
+							}
+							Error.hide();
+						
+							if (Data.UserID) {
+								Users[Users.length] = {
+									UserID: Data.UserID,
+									Username: Data.Username,
+									Type: UserTypeSelect.val(),
+								};
+								RenderMembers();
+							}
+						});
+					});;
+				$('<SPAN>').appendTo(AddIcon).addClass('fas fa-plus-square');
+			}
+		}
+		var Footer = $('<FOOTER>').addClass('modal-card-foot').appendTo(DialogCard);
+			var Buttons = $('<NAV>').addClass('level').appendTo(Footer).width("100%");
+				var ButtonsLeft = $('<DIV>').addClass('level-left').appendTo(Buttons);
+					var CancelButton = $('<BUTTON>').addClass('level-item button').appendTo(ButtonsLeft).text("Cancel").click(() => {
+						alert("Cancel");
+						Dialog.remove();
+					});
+				var ButtonsRight = $('<DIV>').addClass('level-right').appendTo(Buttons);
+					var SaveButton = $('<BUTTON>').addClass('level-item button is-success').appendTo(ButtonsRight).text("Save").click(() => {
+						var Data = {};
+						Data.VLANID = VLANID;
+						Data.Name = Name.val();
+						Data.IPv4 = Subnet.val();
+						Data.Type = NetworkTypePublicInput.prop("checked") ? 'Public' : 'Private';
+						Data.Key = Key.val();
+						Data.Members = Users;
+						API("networks/save", Data, (Data) => {
+							if (Data.Error) {
+								ErrorText.text(Data.Error);
+								Error.show();
+							}
+							if (Data.OK) {
+								Dialog.remove();
+							}
+						});
+					});
+
+		if (VLANID) {
+			Title.text("Edit VLAN");
+			NetworkTypePrivateInput.attr("checked", "checked").change();
+			API("networks/details/" + VLANID, false, (Data) => {
+				MyAccess = Data.MyAccess;
+				Name.val(Data.Name).prop("disabled", true);
+				Subnet.val(Data.IPv4);
+				if (Data.Type == "Public")
+					NetworkTypePublicInput.attr("checked", "checked").change();
+				else
+					NetworkTypePrivateInput.attr("checked", "checked").change();
+				Key.val(Data.Key);
+				if (MyAccess != 'Admin') {
+					Title.text("View VLAN");
+					SaveButton.remove();
+					Subnet.prop("disabled", true);
+					Key.prop("disabled", true);
+					NetworkTypePublicInput.prop("disabled", true);
+					NetworkTypePrivateInput.prop("disabled", true);
+					NetworkTypeControl.prop("disabled", true);
+				}
+				Users = Data.Members;
+				RenderMembers();
+			});
+		} else {
+			Title.text("Create VLAN");
+			NetworkTypePublicInput.attr("checked","checked").change();
+			Users = [
+				{UserID: MyUserID, Type: "Admin", Username: MyUsername}
+			];
+			RenderMembers();
+			SaveButton.text("Create");
+		}
+	}
 </script>
 <div class="content">
 	<button class="button only-when-logged-out" onclick="ShowLogin('networks/list', false, RenderList);">
 		Log in to manage your own networks.
 	</button>
-	<table class="table only-when-logged-in">
+	<table class="table is-hoverable only-when-logged-in">
 		<thead class="title">
 			<tr>
 				<td>
@@ -43,12 +243,20 @@
 				<td width="100%">
 					My Networks
 				</td>
+				<td class="has-text-right">
+					<a class="button is-primary is-outlined" onclick="VLANDialog();">
+						<span class="fas fa-plus-square"></span>
+						<span>
+							&nbsp;Create
+						</span>
+					</a>
+				</td>
 			</tr>
 		</thead>
 		<tbody id="MyNetworkList">
 		</tbody>
 	</table>
-	<table class="table">
+	<table class="table is-hoverable">
 		<thead class="title">
 			<tr>
 				<td>
