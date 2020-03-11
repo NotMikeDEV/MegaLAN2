@@ -15,6 +15,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{16D09944-720B-47D6-B726-2A2AD2499E93}"
+	ProjectSection(SolutionItems) = preProject
+		Common\Crypto.h = Common\Crypto.h
+		Common\ServerProtocol.h = Common\ServerProtocol.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +84,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{16D09944-720B-47D6-B726-2A2AD2499E93} = {AF7A4786-F7E3-44FD-AC82-4F8360C7E03C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1CA2E8F4-94F9-4304-BEA7-8D25F51B0EA4}
