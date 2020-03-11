@@ -3,8 +3,8 @@ START TRANSACTION;
 USE MegaLAN;
 
 REPLACE INTO `Accounts` VALUES ('05617e37835fbd611d57f3c6e50dfff58e654aec','NotMike','3dc9eb3eeb98ea1b207ec1c4ff35539aa7c2744bb7bc4beff45b606fa3c4614f','Mike Test Account','NotMike@NotMike.co.uk','000000');
-REPLACE INTO `Accounts` VALUES ('b444ac06613fc8d63795be9ad0beaf55011936ac','Test1','b6e2ae8da7f2f4529703f141406df89ae7ed49809e49b150f49406d4de165309','Test Account 1','test@megalan.app','000001');
-REPLACE INTO `Accounts` VALUES ('109f4b3c50d7b0df729d299bc6f8e9ef9066971f','Test2','2a6049f5ace825c77b483c6bcee7dfab9439d7ce5053f3814ce2e23408f1b280','Test Account 2','test@megalan.app','000002');
+REPLACE INTO `Accounts` VALUES ('b444ac06613fc8d63795be9ad0beaf55011936ac','Test1','2a6049f5ace825c77b483c6bcee7dfab9439d7ce5053f3814ce2e23408f1b280','Test Account 1','test@megalan.app','000001');
+REPLACE INTO `Accounts` VALUES ('109f4b3c50d7b0df729d299bc6f8e9ef9066971f','Test2','b6e2ae8da7f2f4529703f141406df89ae7ed49809e49b150f49406d4de165309','Test Account 2','test@megalan.app','000002');
 
 DELETE FROM DNS;
 REPLACE INTO DNS (Hostname, Type, Value, Expire) VALUES ('link.megalan.app', 0, 'sendgrid.net', 0);
