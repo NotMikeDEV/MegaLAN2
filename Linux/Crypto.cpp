@@ -19,7 +19,7 @@ void Crypto::SHA256(String Text, BYTE Output[32])
 
 void Crypto::Rand(BYTE* Buffer, size_t Length)
 {
-
+	RAND_bytes(Buffer, Length);
 }
 
 int Crypto::AES256_Encrypt(BYTE* Buffer, size_t Length)
