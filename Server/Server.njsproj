@@ -44,6 +44,9 @@
     <Content Include="NodeApp\Include\ACME.js" />
     <Content Include="NodeApp\Include\SQL.js" />
     <Content Include="NodeApp\template.html" />
+    <Content Include="NodeApp\UDPInterface.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="NodeApp\UDPServer.js" />
     <Content Include="NodeApp\www\account.html" />
     <Content Include="NodeApp\www\account\create.html" />

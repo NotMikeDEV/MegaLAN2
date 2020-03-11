@@ -3,6 +3,7 @@ const promisify = require("promisify-node");
 const dgram = require('dgram');
 const IPAddr = require('ip6addr');
 const database = require('./Include/SQL.js');
+const crypto = require('crypto');
 
 // Command Line Args
 const args = process.argv.slice(2);
@@ -17,38 +18,64 @@ server.on('error', (err) => {
 	server.close();
 });
 setInterval(function () {
-	database.query("DELETE FROM VLAN_Membership WHERE Time < ?", [Math.floor(new Date() / 1000) - 600]);
-	database.query("DELETE FROM IP_Allocations WHERE Time < ?", [Math.floor(new Date() / 1000) - 3600 * 24]);
+//	database.query("DELETE FROM VLAN_Membership WHERE Time < ?", [Math.floor(new Date() / 1000) - 600]);
+//	database.query("DELETE FROM IP_Allocations WHERE Time < ?", [Math.floor(new Date() / 1000) - 3600 * 24]);
 }, 60000);
-server.on('message', (msg, rinfo) => {
-	var Buff = Buffer.from(msg);
-	var UserHash = Buff.slice(0, 20);
-	console.log("Server request", UserHash.toString('hex'), rinfo.address + ":" + rinfo.port);
-	var IV = Buff.slice(20, 36);
-	var Payload = Buff.slice(36);
-	database.query("SELECT Username, PasswordSHA256 FROM Accounts WHERE UserHash = ?", [UserHash.toString('hex')], (err, User) => {
-		if (err) {
-			return console.error(err.message);
-		}
+
+server.on('message', RecvPacket);
+server.bind(54321);
+console.log("Node UDP Server UP at " + ServerName);
+
+const HandleRequest = require('./UDPInterface.js')(SendReply);
+
+async function RecvPacket(msg, rinfo) {
+	try {
+		var Buff = Buffer.from(msg);
+		var UserID = Buff.slice(0, 20);
+		var IV = Buff.slice(20, 36);
+		var Payload = Buff.slice(36);
+		var User = await database.query("SELECT Username, PasswordSHA256 FROM Accounts WHERE UserID = ?", [UserID.toString('hex')]);
 		var AuthKey;
-		if (UserHash == '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0') {
+		if (User.length == 0 || UserID == '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0') {
 			AuthKey = '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0';
-			console.log("NULL Key");
 		} else if (User.length) {
-			AuthKey = User.PasswordSHA256;
-			console.log("User Key");
-		} else {
-			return console.log("Unknown User");
+			AuthKey = Buffer.from(User[0].PasswordSHA256, 'hex');
 		}
+		var ClientInfo = {
+			IP: rinfo.address,
+			Port: rinfo.port,
+			UserID: UserID.toString('hex'),
+			AuthKey: AuthKey,
+		};
+		console.log("UDP Packet", ClientInfo);
 		try {
 			var decipher = crypto.createDecipheriv('aes-256-cbc', AuthKey, IV);
 			Payload = decipher.update(Payload);
-			Payload = Buffer.concat([Request, decipher.final()]);
+			Payload = Buffer.concat([Payload, decipher.final()]);
+			ClientInfo.Username = User[0].Username;
 		} catch (e) {
-			return console.log("Decrypt Error", e);
+			ClientInfo.AuthKey = '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0';
+			if (User.length)
+				console.log("Authentication failed ", User[0].Username, rinfo.address + ":" + rinfo.port);
+			else
+				console.log("Unknown User ", UserID.toString('hex'), rinfo.address + ":" + rinfo.port);
+			return SendReply(ClientInfo, "EROR", "Invalid username/password\0");
 		}
-		console.log("Type", Payload.slice(0, 4));
-	});
-});
-server.bind(54321);
-console.log("Node UDP Server UP at " + ServerName);
+
+		var Type = Payload.slice(0, 4).toString();
+		return HandleRequest(ClientInfo, Type, Payload.slice(4));
+	} catch (e) {
+		return console.log("Error handling packet", e);
+	}
+}
+function SendReply(ClientInfo, Type, Payload) {
+	console.log("Sending " + Type + " packet", ClientInfo);
+
+	var IV = crypto.randomBytes(16);
+	var Response = IV;
+	var cipher = crypto.createCipheriv('aes-256-cbc', ClientInfo.AuthKey, IV);
+	var Encrypted = cipher.update(Type, 'utf8', 'hex');
+	Encrypted += cipher.update(Buffer.from(Payload).toString('hex'), 'hex', 'hex');
+	Encrypted += cipher.final('hex');
+	server.send(Buffer.concat([IV, Buffer.from(Encrypted, 'hex')]), ClientInfo.Port, ClientInfo.IP);
+}
