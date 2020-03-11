@@ -1,5 +1,6 @@
 var database = require('./SQL.js');
 const acme = require('acme-client');
+const x509 = require('x509.js');
 
 //const Directory = acme.directory.letsencrypt.staging;
 const Directory = acme.directory.letsencrypt.production;
@@ -76,14 +77,40 @@ async function Provision(DomainName) {
     return { private: key.toString(), certificate: cert.toString() };
 }
 
+var CurrentCert = false;
 // Exported function for getting TLS cert
 module.exports = async function (DomainName) {
-    var Keys = {};
+    await Renew();
     var PrivateKey = await database.query("SELECT Value FROM Settings WHERE Name = 'TLSprivate';");
     var Certificate = await database.query("SELECT Value FROM Settings WHERE Name = 'TLScert';");
+    var Keys;
     if (PrivateKey.length && Certificate.length)
         Keys = { private: PrivateKey[0].Value, certificate: Certificate[0].Value };
-    else
-        Keys = await Provision(DomainName);
+    CurrentCert = Keys.certificate;
     return Keys;
+}
+
+async function Renew() {
+    var Certificate = await database.query("SELECT Value FROM Settings WHERE Name = 'TLScert';");
+    if (Certificate.length) {
+        if (CurrentCert && Certificate[0].Value != CurrentCert) { // Check if another server has replaced the cert
+            console.log("TLS certificate has been replaced. Restarting.", Keys.certificate);
+            process.exit(0);
+        }
+        var crt_obj = x509.parseCert(Certificate[0].Value);
+        var Expires = Date.parse(crt_obj.notAfter);
+        var Remaining = (Expires - new Date()) / 1000; // Remaining seconds
+        Remaining /= 60; // Minutes
+        Remaining /= 60; // Hours
+        Remaining /= 24; // Days
+        console.log("TLS Certificate expires in " + Remaining + " days");
+        if (Remaining > 30) // More than 30 days of validity remaining
+            return setTimeout(Renew, 24 * 60 * 60 * 1000 * Math.random()); // Sleep for up to 24 hours
+    }
+    console.log("Renewing TLS certificate");
+    var NewKeys = await Provision(DomainName);
+    if (NewKeys.certificate) {
+        console.log("Restarting");
+        process.exit(0);
+    }
 }

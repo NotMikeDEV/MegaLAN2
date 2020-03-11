@@ -7,7 +7,7 @@ local IPv6 = exec("echo -n " .. exec([[ip addr|grep "inet6 "|grep global|cut -d 
 Mount{path='/MegaLAN/', type="map", source="/MegaLAN/"}
 
 function install_container()
-	install_package("ca-certificates unbound")
+	install_package("ca-certificates")
 	exec_or_die("wget -O- https://deb.nodesource.com/setup_13.x | bash -")
 	install_package("nodejs")
 	exec_or_die("npm install promisify-node")
@@ -15,6 +15,7 @@ function install_container()
 	exec_or_die("npm install ip6addr")
 	exec_or_die("npm install native-dns")
 	exec_or_die("npm install acme-client")
+	exec_or_die("npm install x509.js")
 	exec_or_die("npm install mime-types")
 	exec_or_die("npm install @sendgrid/mail")
 	return 0
