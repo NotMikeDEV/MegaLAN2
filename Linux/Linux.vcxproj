@@ -101,6 +101,9 @@
       </LibraryDependencies>
       <AdditionalOptions>-ldl -lcrypto -lssl</AdditionalOptions>
     </Link>
+    <ClCompile>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
