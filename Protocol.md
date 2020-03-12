@@ -80,17 +80,17 @@ Client > Server
 
 Server > Client
 
-["LIST":4][Count:1]{[VLANID:20]:N}[Mark:4]
+["LIST":4][Count:1]{[VLANID:10]:N}[Mark:4]
 
 For each VLANID received in a LIST, the following is sent:
 
 Client > Server
 
-["INFO":4][VLANID:20]
+["INFO":4][VLANID:10]
 
 Server > Client
 
-["INFO":4][VLANID:20][Name:N][Description:N][PasswordProtected:1]
+["INFO":4][VLANID:10][Type:1][Name:N]
 
 ## Join VLAN
 
@@ -100,7 +100,7 @@ Client > Server
 
 Server > Client
 
-["JOIN":4][VLANID:20][PasswordProtected:1][Name:N]
+["JOIN":4][VLANID:10][Type:1][Name:N]
 
 or
 
@@ -112,11 +112,11 @@ Sent on intial connect, and periodically to refresh new peers.
 
 Client > Server (***Highlighted*** part of RGST request is encrypted with the VLAN Key (SHA256 of VLAN password))
 
-["RGST":4][VLANID:20]***["LETMEIN":7][MAC:6][IP Count:1]{[IP:16][Port:2]}:N***
+["RGST":4][VLANID:10]***["LETMEIN":7][MAC:6][IP Count:1]{[IP:16][Port:2]}:N***
 
 Server > Client
 
-["RGST":4][VLANID:20][IPv4:4][IPv4 Prefix:1]
+["RGST":4][VLANID:10][IPv4:4][IPv4 Prefix:1]
 
 or
 
@@ -128,7 +128,7 @@ Followed by the server sending Peer Notifications for and to each peer.
 
 Server > Client
 
-["VLAN":4][VLANID:20][UserID:20][MAC:6][IP:16][Port:2]
+["VLAN":4][VLANID:10][UserID:20][MAC:6][IP:16][Port:2]
 
 ### Peer Identification
 
@@ -156,11 +156,11 @@ Initial communication involves exchanging a list of other known peers to supplim
 
 Initial connection request:
 
-["INIT":4][VLANID:20][UserID:20][MAC:6]
+["INIT":4][VLANID:10][UserID:20][MAC:6]
 
 INIT reply:
 
-["PONG":4][VLANID:20][UserID:20][MAC:6][PublicKeyLength:2][PublicKey:N][Peer Count:2]{[PeerUserID:20][PeerMAC:6][PeerIP:16][PeerPort:2]}:PeerCount
+["PONG":4][VLANID:10][UserID:20][MAC:6][PublicKeyLength:2][PublicKey:N][Peer Count:2]{[PeerUserID:20][PeerMAC:6][PeerIP:16][PeerPort:2]}:PeerCount
 
 Each peer sends an "INIT" packet to the other, and gets a "PONG" response. The Public Key in the "PONG" packet is the ECDH public key of the sending node. The NIST B-571 curve is used to calculate shared keys. Once both sides have received "PONG" messages and associated public keys they can compute a shared secret. The shared key is the SHA256 of the generated shared secret.
 
@@ -168,11 +168,11 @@ Note: If receiving an INIT packet from an unknown address, the receiving node sh
 
 ## KeepAlive/HeartBeat
 
-["PING":4][VLANID:20][UserID:20][MAC:6]
+["PING":4][VLANID:10][UserID:20][MAC:6]
 
 PING Reply:
 
-["PONG":4][VLANID:20][UserID:20][MAC:6][0x0000:2][0x0000:2]
+["PONG":4][VLANID:10][UserID:20][MAC:6][0x0000:2][0x0000:2]
 
 This should be sent at least every 30 seconds, and a session should time-out if there is no response after multiple attempts.
 

@@ -73,7 +73,7 @@ module.exports = {
 					JSON: { Error: 'Name in use' },
 				};
 			}
-			Data.VLANID = (await crypto.randomBytes(20)).toString('hex');
+			Data.VLANID = (await crypto.randomBytes(10)).toString('hex');
 			await database.query("INSERT INTO Networks (VLANID, Name) VALUES (?,?)", [Data.VLANID, Data.Name]);
 			await database.query("INSERT INTO NetworkUsers (VLANID, UserID, Type) VALUES (?,?,?)", [Data.VLANID, Session.UserID, 'Admin']);
 		}
