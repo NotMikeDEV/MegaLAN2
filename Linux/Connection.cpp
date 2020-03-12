@@ -79,26 +79,22 @@ Connection::Connection(String ServerName, const BYTE UserID[20], const BYTE User
 		exit(1);
 	}
 }
-bool Connection::AUTH()
+Connection::~Connection()
 {
-	// Clear Status
-	memset(&PreferredServer, 0, sizeof(PreferredServer));
-	AUTHED = false;
-
-	// Send AUTH to servers.
-	ServerRequest Request(UserID, "AUTH", NULL, 0);
-	Request.Encrypt(UserCrypto);
-	for (auto& S : Servers)
+	if (this->UserCrypto)
+		delete this->UserCrypto;
+	if (this->NULLCrypto)
+		delete this->NULLCrypto;
+	for (auto& VLAN : ListRemaining)
 	{
-		DEBUG(1, "Sending AUTH to %s", (LPSTR)String(S));
-		SendPacket(S, Request);
+		DEBUG(2, "VLAN remaining: %s", (LPCSTR)String::toHex(VLAN, 10));
+		delete VLAN;
 	}
-	bool Response = RecvLoop();
-	while (Response && !AUTHED && !GotEROR)
-	{
-		Response = RecvLoop();
-	}
-	return AUTHED;
+	ListRemaining.empty();
+}
+void Connection::Terminate()
+{
+	Terminating = true;
 }
 
 void Connection::SendPacket(sockaddr_in6 &Destination, ServerRequest &Packet)
@@ -134,6 +130,59 @@ void Connection::HandleServerResponse(ServerResponse& Packet, sockaddr_in6& from
 			DEBUG(1, "Learned external address %s", (LPSTR)String(Address));
 			Addresses.push_back(Address);
 		}
+	}
+	if (Packet.Type.operator==("LIST"))
+	{
+		if (!ListingCallback || memcmp(&from, &PreferredServer, sizeof(PreferredServer)))
+		{
+			DEBUG(1, "Unexpected LIST response from %s", (LPCSTR)String(from));
+			return;
+		}
+		BYTE Count = Packet.Payload[0];
+		if (Count)
+		{
+			for (int x = 0; x < Count; x++)
+			{
+				BYTE* VLANID = new BYTE[10];
+				memcpy(VLANID, Packet.Payload + 1 + (x * 10), 10);
+				DEBUG(2, "VLAN %s", (LPCSTR)String::toHex(VLANID, 10));
+				ServerRequest Request(UserID, "INFO", VLANID, 10);
+				Request.Encrypt(UserCrypto);
+				SendPacket(PreferredServer, Request);
+				ListRemaining.push_back(VLANID);
+			}
+			ListingPosition = *(UINT32*)(Packet.Payload + 1 + (Count * 10));
+			DEBUG(1, "LIST From %s Count %u Mark %x", (LPCSTR)String(from), Count, ListingPosition);
+			ServerRequest Request(UserID, "LIST", (BYTE*)&ListingPosition, 4);
+			Request.Encrypt(UserCrypto);
+			SendPacket(PreferredServer, Request);
+		}
+		else
+		{
+			ListDone = true;
+			DEBUG(1, "LIST From %s END", (LPCSTR)String(from));
+		}
+	}
+	if (Packet.Type.operator==("INFO") && Packet.PayloadLength > 11)
+	{
+		if (!ListRemaining.size() || memcmp(&from, &PreferredServer, sizeof(PreferredServer)))
+		{
+			DEBUG(1, "Unexpected INFO response from %s", (LPCSTR)String(from));
+			return;
+		}
+		BYTE VLANID[10];
+		memcpy(VLANID, Packet.Payload, 10);
+		for (auto &VLAN : ListRemaining)
+		{
+			if (memcmp(VLANID, VLAN, 10))
+				continue;
+			ListRemaining.remove(VLAN);
+			delete VLAN;
+			String Name = (char*)Packet.Payload + 11;
+			ListingCallback(VLANID, Packet.Payload[10], Name);
+			return;
+		}
+		DEBUG(1, "Unexpected INFO response from %s for %x", (LPCSTR)String(from), (LPCSTR)String::toHex(VLANID, 10));
 	}
 }
 
@@ -190,10 +239,65 @@ bool Connection::RecvLoop()
 	return false;
 }
 
-Connection::~Connection()
+bool Connection::AUTH()
 {
-	if (this->UserCrypto)
-		delete this->UserCrypto;
-	if (this->NULLCrypto)
-		delete this->NULLCrypto;
+	// Clear Status
+	memset(&PreferredServer, 0, sizeof(PreferredServer));
+	AUTHED = false;
+
+	// Send AUTH to servers.
+	ServerRequest Request(UserID, "AUTH", NULL, 0);
+	Request.Encrypt(UserCrypto);
+	for (auto& S : Servers)
+	{
+		DEBUG(1, "Sending AUTH to %s", (LPSTR)String(S));
+		SendPacket(S, Request);
+	}
+	bool Response = RecvLoop();
+	while (!Terminating && Response && !AUTHED && !GotEROR)
+	{
+		Response = RecvLoop();
+	}
+	return AUTHED;
+}
+
+bool Connection::LIST(LISTING_CALLBACK* ListingCallback)
+{
+	this->ListingCallback = ListingCallback;
+	ListingPosition = 0;
+	ServerRequest Request(UserID, "LIST", (BYTE*)&ListingPosition, 4);
+	Request.Encrypt(UserCrypto);
+	DEBUG(1, "Sending LIST to %s", (LPSTR)String(PreferredServer));
+	SendPacket(PreferredServer, Request);
+	GotEROR = false;
+	bool Response = true;
+	while (!Terminating && Response && !GotEROR && (!ListDone || ListRemaining.size()))
+	{
+		Response = RecvLoop();
+		if (!Response && ListRemaining.size())
+		{
+			for (auto& VLANID : ListRemaining) {
+				DEBUG(2, "Re-requesting VLAN %s", (LPCSTR)String::toHex(VLANID, 10));
+				ServerRequest Request(UserID, "INFO", VLANID, 10);
+				Request.Encrypt(UserCrypto);
+				SendPacket(PreferredServer, Request);
+			}
+			Response = true;
+		}
+		if (!Response && !ListDone)
+		{
+			ServerRequest Request(UserID, "LIST", (BYTE*)&ListingPosition, 4);
+			Request.Encrypt(UserCrypto);
+			DEBUG(1, "Re-sending LIST to %s", (LPSTR)String(PreferredServer));
+			SendPacket(PreferredServer, Request);
+			Response = true;
+		}
+	}
+	if (!ListDone)
+	{
+		printf("LIST failed\n");
+		this->ListingCallback = NULL;
+		return false;
+	}
+	return true;
 }

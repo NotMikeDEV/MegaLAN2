@@ -1,10 +1,11 @@
 #include "Globals.h"
 #include <signal.h>
 
-bool Dead = false;
+Connection* Cloud = NULL;
 void term(int signum)
 {
-	Dead = true;
+	if (Cloud)
+		Cloud->Terminate();
 	printf("Exiting.\n");
 }
 
@@ -18,8 +19,26 @@ int print_usage(const char* progname, String Error = NULL)
 	printf("\t-p <password>\tSpecify a network password.\n");
 	printf("\t-s <server>\tSpecify server. (default: megalan.app)\n");
 	printf("\t-i <iface>\tSpecifiy the name of the virtual interface.\n");
+#ifdef _DEBUG
 	printf("\t-D        \tEnable debug output. (Use multiple times for verbose)\n");
+#endif
+	printf("Network Types:\n");
+	printf("[ ] Public\n");
+	printf("[*] Password Protected\n");
+	printf("[+] Private\n");
 	return 1;
+}
+
+int ListNum = 0;
+void ListingCallback(const unsigned char ID[20], BYTE Type, String Name)
+{
+	DEBUG(2, "Listing: %u %s", Type, (LPSTR)Name);
+	char* TypeIndicator = "[ ]";
+	if (Type == 1)
+		TypeIndicator = "[*]";
+	if (Type == 2)
+		TypeIndicator = "[+]";
+	printf("%u %s %s\n", ++ListNum, TypeIndicator, (LPCSTR)Name);
 }
 
 int main(int argc, char* argv[])
@@ -68,11 +87,13 @@ int main(int argc, char* argv[])
 				argp++;
 				argp++;
 			}
+#ifdef _DEBUG
 			else if (strcmp(argp[0], "-D") == 0)
 			{
 				DebugEnabled++;
 				argp++;
 			}
+#endif
 			else
 			{
 				return print_usage(argv[0], String("Invalid option: ") + argp[0]);
@@ -106,17 +127,19 @@ int main(int argc, char* argv[])
 	DEBUG(1, "UserID: %s", (LPCSTR)String::toHex(UserID, 20));
 	DEBUG(1, "UserKey: %s", (LPCSTR)String::toHex(UserKey, 32));
 
-	Connection Cloud(Server, UserID, UserKey);
+	Cloud = new Connection(Server, UserID, UserKey);
 
-	bool OK = Cloud.AUTH();
+	bool OK = Cloud->AUTH();
 	if (!OK)
 	{
-		return printf("Unable to connect.\n");
+		printf("Unable to connect.\n");
+		return -1;
 	}
 
 	if (NetworkName.length() == 0)
 	{
-		printf("Loading List\n");
+		printf("Avaliable Networks:\n");
+		return Cloud->LIST(ListingCallback)?0:1;
 	}
 	else
 	{
@@ -132,6 +155,6 @@ int main(int argc, char* argv[])
 			DEBUG(1, "InterfaceName: %s", (LPCSTR)InterfaceName);
 		printf("Joining Network\n");
 	}
-
+	delete Cloud;
 	return 0;
 }
